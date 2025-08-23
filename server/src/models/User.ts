@@ -26,7 +26,7 @@ export interface IUser extends Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-const UserSchema: Schema = new Schema({
+const UserSchema = new Schema({
   email: { 
     type: String, 
     required: true, 
@@ -61,7 +61,8 @@ const UserSchema: Schema = new Schema({
   timestamps: true
 });
 
-UserSchema.pre<IUser>('save', async function(next) {
+// Simplified pre-save hook without generic typing
+UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
   try {
@@ -81,4 +82,4 @@ UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ isActive: 1 });
 
-export default mongoose.model<IUser>('User', UserSchema);
+export default mongoose.model('User', UserSchema);
