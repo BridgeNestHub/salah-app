@@ -8,7 +8,7 @@ import { configureExpress } from './config/express';
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env' : '../.env' });
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = parseInt(process.env.PORT || '8000', 10);
 console.log('🔧 Environment:', process.env.NODE_ENV);
 console.log('🔧 Using PORT:', PORT, 'from env:', process.env.PORT);
 console.log('🔧 MongoDB URI:', process.env.MONGODB_URI ? 'Set' : 'Not set');
@@ -105,7 +105,7 @@ const startServer = async () => {
     process.on('SIGTERM', () => {
       console.log('🛑 SIGTERM received, shutting down gracefully');
       server.close(() => {
-        mongoose.connection.close(false, () => {
+        mongoose.connection.close(() => {
           console.log('✅ Server shut down successfully');
           process.exit(0);
         });
