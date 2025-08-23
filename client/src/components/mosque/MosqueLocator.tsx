@@ -161,7 +161,7 @@ const MosqueLocator: React.FC = () => {
             },
           },
           rating: place.rating || undefined,
-          isOpen: place.regularOpeningHours?.isOpen ? place.regularOpeningHours.isOpen() : undefined,
+          isOpen: undefined,
           photos: place.photos?.slice(0, 1).map(photo => photo.getURI({ maxWidth: 400, maxHeight: 300 })),
           distance: calculateDistance(lat, lng, place.location!.lat(), place.location!.lng()),
         }));
