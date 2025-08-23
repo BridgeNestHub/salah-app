@@ -3,13 +3,23 @@
   "version": "1.0.0",
   "description": "Comprehensive Islamic prayer application with web and mobile support",
   "main": "server/src/index.js",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "server:dev": "cd server && npm run dev",
     "client:dev": "cd client && npm start",
-    "build": "cd client && npm run build",
+    "build": "npm run install:all && cd client && npm run build",
+    "build:client": "cd client && npm run build",
+    "build:server": "cd server && npm run build",
     "start": "cd server && npm start",
-    "install:all": "npm install && cd client && npm install && cd ../server && npm install"
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "clean": "rm -rf node_modules client/node_modules server/node_modules client/build",
+    "test": "cd client && npm test && cd ../server && npm test",
+    "lint": "cd client && npm run lint && cd ../server && npm run lint"
   },
   "keywords": [
     "islamic",
@@ -17,15 +27,21 @@
     "qibla",
     "mosque",
     "quran",
-    "hadith"
+    "hadith",
+    "react",
+    "nodejs",
+    "mongodb"
   ],
   "author": "Your Name",
   "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
   "dependencies": {
-    "@types/google.maps": "^3.58.1",
-    "@types/googlemaps": "^3.43.3"
+    "@types/google.maps": "^3.58.1"
   }
 }
