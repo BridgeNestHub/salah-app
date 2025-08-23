@@ -11,9 +11,10 @@ export interface INotification extends Document {
   sentAt?: Date;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
+  updatedAt: Date;
 }
 
-const NotificationSchema: Schema = new Schema({
+const NotificationSchema = new Schema({
   title: { type: String, required: true, trim: true },
   message: { type: String, required: true },
   type: { 
@@ -39,4 +40,4 @@ NotificationSchema.index({ scheduledFor: 1, sent: 1 });
 NotificationSchema.index({ targetAudience: 1 });
 NotificationSchema.index({ type: 1 });
 
-export default mongoose.model<INotification>('Notification', NotificationSchema);
+export default mongoose.model('Notification', NotificationSchema);
