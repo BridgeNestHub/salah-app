@@ -1,6 +1,16 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
-const ContactSubmissionSchema = new mongoose.Schema({
+export interface IContactSubmission extends Document {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ContactSubmissionSchema = new Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, trim: true },
   subject: { type: String, required: true },
@@ -17,4 +27,5 @@ const ContactSubmissionSchema = new mongoose.Schema({
 ContactSubmissionSchema.index({ status: 1 });
 ContactSubmissionSchema.index({ createdAt: -1 });
 
-export default mongoose.model('ContactSubmission', ContactSubmissionSchema);
+const ContactSubmission = mongoose.model<IContactSubmission>('ContactSubmission', ContactSubmissionSchema);
+export default ContactSubmission;
