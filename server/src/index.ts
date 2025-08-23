@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import path from 'path';
 import { configureExpress } from './config/express';
 
 // Load environment variables
@@ -51,8 +52,12 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Root route
-app.get('/', (req, res) => {
+// Serve static files from React build
+const buildPath = path.join(__dirname, '../../client/build');
+app.use(express.static(buildPath));
+
+// API routes come first
+app.get('/api', (req, res) => {
   res.json({
     message: 'Islamic Prayer Tools API',
     status: 'running',
@@ -63,17 +68,21 @@ app.get('/', (req, res) => {
   });
 });
 
+// Catch-all handler: send back React's index.html file for any non-API routes
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
+  res.sendFile(path.join(buildPath, 'index.html'));
+});
+
 // Error handling middleware
 app.use((err: any, req: any, res: any, next: any) => {
   console.error('❌ Server error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// 404 handler for unknown routes
-app.use('*', (req, res) => {
-  console.log('❌ 404 - Route not found:', req.originalUrl);
-  res.status(404).json({ error: 'Route not found', path: req.originalUrl });
-});
+
 
 // Start server
 const startServer = async () => {
