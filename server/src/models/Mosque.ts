@@ -1,12 +1,11 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
-// Separate the base interface from the Document interface
-export interface IMosqueBase {
+export interface IMosque extends Document {
   name: string;
   address: string;
   location: {
     type: 'Point';
-    coordinates: [number, number]; // [longitude, latitude]
+    coordinates: [number, number];
   };
   contact: {
     phone?: string;
@@ -18,11 +17,7 @@ export interface IMosqueBase {
   updatedAt: Date;
 }
 
-// Extend Document separately to avoid complex union types
-export interface IMosque extends IMosqueBase, Document {}
-
-// Define the schema with proper typing
-const MosqueSchema = new Schema<IMosque>({
+const MosqueSchema = new Schema({
   name: { type: String, required: true, trim: true },
   address: { type: String, required: true, trim: true },
   location: {
@@ -52,12 +47,8 @@ const MosqueSchema = new Schema<IMosque>({
   timestamps: true
 });
 
-// Add indexes
 MosqueSchema.index({ location: '2dsphere' });
 MosqueSchema.index({ verified: 1 });
 MosqueSchema.index({ name: 'text', address: 'text' });
 
-// Export with explicit typing to avoid complex union resolution
-const MosqueModel: Model<IMosque> = mongoose.model<IMosque>('Mosque', MosqueSchema);
-
-export default MosqueModel;
+export default mongoose.model('Mosque', MosqueSchema);
