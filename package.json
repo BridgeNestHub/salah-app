@@ -2,19 +2,13 @@
   "name": "islamic-prayer-tools",
   "version": "1.0.0",
   "description": "Comprehensive Islamic prayer application with web and mobile support",
-  "main": "server/src/index.js",
+  "main": "server/dist/index.js",
   "private": true,
-  "workspaces": [
-    "client",
-    "server"
-  ],
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "server:dev": "cd server && npm run dev",
     "client:dev": "cd client && npm start",
-    "build": "npm run install:all && cd client && npm run build",
-    "build:client": "cd client && npm run build",
-    "build:server": "cd server && npm run build",
+    "build": "cd server && npm install && npm run build",
     "start": "cd server && npm start",
     "install:all": "npm install && cd client && npm install && cd ../server && npm install",
     "clean": "rm -rf node_modules client/node_modules server/node_modules client/build",
