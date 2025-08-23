@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import { configureExpress } from './config/express';
 
 // Load environment variables
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env' : '../.env' });
@@ -11,17 +12,8 @@ const PORT = parseInt(process.env.PORT || '8000', 10);
 console.log('🔧 Environment:', process.env.NODE_ENV);
 console.log('🔧 Using PORT:', PORT);
 
-// Basic middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Add CORS middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  next();
-});
+// Configure Express middleware and routes
+configureExpress(app);
 
 // Database connection
 let dbConnected = false;
