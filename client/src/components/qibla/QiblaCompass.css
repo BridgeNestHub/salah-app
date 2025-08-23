@@ -1,0 +1,247 @@
+.qibla-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 80vh;
+  border-radius: 20px;
+  margin: 1rem;
+}
+
+.loading, .error-msg {
+  padding: 1rem 2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.loading {
+  background: rgba(255, 255, 255, 0.9);
+  color: #667eea;
+}
+
+.error-msg {
+  background: rgba(255, 107, 107, 0.9);
+  color: white;
+}
+
+.compass-wrapper {
+  position: relative;
+  padding: 2rem;
+}
+
+.compass-circle {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, #f0f0f0 100%);
+  border: 8px solid #2c3e50;
+  box-shadow: 
+    0 0 0 4px #ecf0f1,
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.compass-marks {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.degree-marks {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.degree-mark {
+  position: absolute;
+  width: 2px;
+  height: 15px;
+  background: #34495e;
+  transform-origin: bottom center;
+}
+
+.degree-mark.major {
+  height: 25px;
+  width: 3px;
+  background: #2c3e50;
+}
+
+.degree-number {
+  position: absolute;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #2c3e50;
+  transform: translate(-50%, -50%);
+}
+
+.mark {
+  position: absolute;
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #2c3e50;
+}
+
+.mark.north {
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #e74c3c;
+}
+
+.mark.east {
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.mark.south {
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.mark.west {
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.qibla-needle {
+  position: absolute;
+  width: 4px;
+  height: 120px;
+  background: linear-gradient(to top, #27ae60 0%, #2ecc71 100%);
+  transform-origin: 50% 100%;
+  transition: transform 0.5s ease;
+  border-radius: 2px 2px 0 0;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+  top: 50%;
+  left: 50%;
+  margin-left: -2px;
+  margin-top: -120px;
+}
+
+.needle-tip {
+  position: absolute;
+  top: -40px;
+  left: -18px;
+  font-size: 36px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.needle-tip::after {
+  content: attr(data-degree);
+  position: absolute;
+  top: -20px;
+  left: -10px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  border-radius: 8px;
+  color: #2c3e50;
+  font-weight: bold;
+}
+
+.compass-center {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: #34495e;
+  border-radius: 50%;
+  border: 3px solid #ecf0f1;
+  z-index: 10;
+}
+
+.compass-info {
+  position: absolute;
+  text-align: center;
+  top: 60%;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px;
+  border-radius: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.direction-text {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #27ae60;
+  margin-bottom: 4px;
+}
+
+.location-text {
+  font-size: 0.9rem;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+
+
+.refresh-btn {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+.refresh-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.manual-compass {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.manual-compass label {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.compass-status {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .compass-circle {
+    width: 250px;
+    height: 250px;
+  }
+  
+  .qibla-needle {
+    height: 100px;
+  }
+  
+  .info-panel {
+    min-width: auto;
+    width: 100%;
+  }
+}

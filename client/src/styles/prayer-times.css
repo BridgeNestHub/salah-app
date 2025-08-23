@@ -1,0 +1,154 @@
+.location-info {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0 auto 2rem auto;
+    max-width: 600px;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
+}
+
+.location-info input {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.location-info button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #2c786c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.location-info button:hover {
+    background-color: #1e5a50;
+}
+
+.location-info button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.prayer-times {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.athan-time, .iqama-time {
+    display: flex;
+    justify-content: space-between;
+    color: rgb(28, 193, 86);
+}
+
+.time-label {
+    font-size: 1rem;
+    color: #121117;
+}
+
+.time-value {
+    font-weight: bold;
+}
+
+.iqama-time .time-value {
+    color: #2c786c;
+}
+
+.prayer-time-card.active .time-value {
+    color: white;
+}
+
+.prayer-time-card.active .iqama-time .time-value {
+    color: #ffd700;
+}
+
+.prayer-times-container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.date-display {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    color: #2c786c;
+    font-weight: bold;
+}
+
+.prayer-times-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.prayer-time-card {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    transition: transform 0.3s;
+}
+
+.prayer-time-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.prayer-time-card.active {
+    background-color: #2c786c;
+    color: white;
+}
+
+.prayer-name {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.prayer-time {
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+.prayer-time-card.active .prayer-name,
+.prayer-time-card.active .prayer-time {
+    color: white;
+}
+
+.loading {
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.2rem;
+    color: #666;
+}
+
+@media (max-width: 768px) {
+    .location-info input {
+        min-width: 250px;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .location-info input {
+        min-width: 200px;
+        width: 100%;
+        font-size: 14px;
+        padding: 10px 12px;
+    }
+}
