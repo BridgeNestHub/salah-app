@@ -1,16 +1,6 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose from 'mongoose';
 
-export interface IContactSubmission extends Document {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  status: 'pending' | 'responded' | 'closed';
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const ContactSubmissionSchema = new Schema({
+const ContactSubmissionSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, trim: true },
   subject: { type: String, required: true },
@@ -18,7 +8,6 @@ const ContactSubmissionSchema = new Schema({
   status: { 
     type: String, 
     required: true, 
-    enum: ['pending', 'responded', 'closed'],
     default: 'pending'
   }
 }, {
@@ -28,4 +17,4 @@ const ContactSubmissionSchema = new Schema({
 ContactSubmissionSchema.index({ status: 1 });
 ContactSubmissionSchema.index({ createdAt: -1 });
 
-export default mongoose.model<IContactSubmission>('ContactSubmission', ContactSubmissionSchema);
+export default mongoose.model('ContactSubmission', ContactSubmissionSchema);
