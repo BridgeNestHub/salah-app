@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import path from 'path';
 import { configureExpress } from './config/express';
 
 // Load environment variables - fix the path for Docker
@@ -37,16 +38,21 @@ const connectDB = async () => {
   }
 };
 
-// Root route redirect
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Islamic Prayer Tools API',
-    endpoints: {
-      health: '/api/health',
-      status: 'running'
-    },
-    timestamp: new Date().toISOString()
-  });
+// Serve static files from React build
+app.use(express.static(path.join(__dirname, '../client/build')));
+
+// API routes (add your API routes before the catch-all)
+// app.use('/api', apiRoutes); // Your API routes go here
+
+// Serve React app for all non-API routes
+app.get('*', (req, res) => {
+  // If it's an API request that doesn't exist, return 404
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  
+  // Otherwise serve the React app
+  res.sendFile(path.join(__dirname, '../client/build/index.html'));
 });
 
 // Enhanced health check route
