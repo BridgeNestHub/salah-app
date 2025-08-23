@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Event from '../../models/Event';
-import { EventCreateRequest } from '../../../../shared/types';
+import { EventCreateRequest } from '../../types/shared';
 
 interface AuthRequest extends Request {
   user?: any;

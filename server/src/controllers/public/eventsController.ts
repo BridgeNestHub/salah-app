@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Event from '../../models/Event';
-import { ApiResponse, PaginatedResponse } from '../../../../shared/types';
+import { ApiResponse, PaginatedResponse } from '../../types/shared';
 
 export const getEvents = async (req: Request, res: Response) => {
   try {
