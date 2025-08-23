@@ -1,114 +1,112 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import path from 'path';
-import { configureExpress } from './config/express';
 
-// Load environment variables - fix the path for Docker
+// Load environment variables
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env' : '../.env' });
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '8000', 10);
+
 console.log('🔧 Environment:', process.env.NODE_ENV);
-console.log('🔧 Using PORT:', PORT, 'from env:', process.env.PORT);
-console.log('🔧 MongoDB URI:', process.env.MONGODB_URI ? 'Set' : 'Not set');
+console.log('🔧 Using PORT:', PORT);
 
-// Configure Express middleware
-configureExpress(app);
+// Basic middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Database connection with better error handling
+// Add CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  next();
+});
+
+// Database connection
+let dbConnected = false;
 const connectDB = async () => {
   try {
     const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/islamic-prayer-tools';
-    console.log('🔄 Connecting to MongoDB...');
+    console.log('🔄 Attempting MongoDB connection...');
     
-    await mongoose.connect(mongoUri, {
-      // Remove deprecated options that might cause issues
-    });
-    
+    await mongoose.connect(mongoUri);
     console.log('✅ MongoDB connected successfully');
-    return true;
+    dbConnected = true;
   } catch (error) {
-    console.error('❌ MongoDB connection error:', error);
-    // Don't exit in production, continue without DB for health checks
-    if (process.env.NODE_ENV !== 'production') {
-      process.exit(1);
-    }
-    return false;
+    console.error('❌ MongoDB connection failed:', error);
+    dbConnected = false;
   }
 };
 
-// Serve static files from React build
-app.use(express.static(path.join(__dirname, '../client/build')));
-
-// API routes (add your API routes before the catch-all)
-// app.use('/api', apiRoutes); // Your API routes go here
-
-// Serve React app for all non-API routes
-app.get('*', (req, res) => {
-  // If it's an API request that doesn't exist, return 404
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ error: 'API endpoint not found' });
-  }
-  
-  // Otherwise serve the React app
-  res.sendFile(path.join(__dirname, '../client/build/index.html'));
-});
-
-// Enhanced health check route
+// Health check routes (MUST BE FIRST)
 app.get('/api/health', (req, res) => {
-  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-  
+  console.log('📍 Health check requested');
   res.status(200).json({ 
     status: 'OK', 
     message: 'Islamic Prayer Tools API is running',
-    database: dbStatus,
+    database: dbConnected ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
-    port: PORT,
-    env: process.env.NODE_ENV || 'development'
+    port: PORT
   });
 });
 
-// Additional health endpoint (Railway sometimes checks different paths)
 app.get('/health', (req, res) => {
+  console.log('📍 Simple health check requested');
   res.status(200).json({ 
-    status: 'OK', 
-    service: 'islamic-prayer-api',
+    status: 'OK',
     timestamp: new Date().toISOString()
   });
 });
 
-// Catch-all error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('❌ Unhandled error:', err);
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Islamic Prayer Tools API',
+    status: 'running',
+    endpoints: {
+      health: '/api/health'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Error handling middleware
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error('❌ Server error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server with better error handling
+// 404 handler for unknown routes
+app.use('*', (req, res) => {
+  console.log('❌ 404 - Route not found:', req.originalUrl);
+  res.status(404).json({ error: 'Route not found', path: req.originalUrl });
+});
+
+// Start server
 const startServer = async () => {
   try {
-    // Try to connect to DB but don't fail if it's not available
-    const dbConnected = await connectDB();
+    // Try connecting to database (don't fail if it doesn't work)
+    await connectDB();
     
-    if (!dbConnected) {
-      console.log('⚠️  Starting server without database connection');
-    }
-    
-    // Listen on all interfaces (0.0.0.0) for Railway
     const server = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🔧 API Health: http://localhost:${PORT}/api/health`);
-      console.log(`📊 Database: ${mongoose.connection.readyState === 1 ? '✅ Connected' : '❌ Disconnected'}`);
+      console.log(`🚀 Server successfully started on port ${PORT}`);
+      console.log(`🔧 Health endpoint: http://localhost:${PORT}/api/health`);
+      console.log(`📊 Database status: ${dbConnected ? '✅ Connected' : '❌ Disconnected'}`);
     });
 
-    // Handle graceful shutdown
+    // Graceful shutdown
     process.on('SIGTERM', () => {
-      console.log('🛑 SIGTERM received, shutting down gracefully');
+      console.log('🛑 Received SIGTERM, shutting down gracefully...');
       server.close(() => {
-        mongoose.connection.close(() => {
-          console.log('✅ Server shut down successfully');
+        if (dbConnected) {
+          mongoose.connection.close(() => {
+            console.log('✅ Database connection closed');
+            process.exit(0);
+          });
+        } else {
           process.exit(0);
-        });
+        }
       });
     });
 
@@ -119,14 +117,15 @@ const startServer = async () => {
   }
 };
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
+// Handle uncaught errors
 process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught Exception:', error);
   process.exit(1);
 });
 
-startServer().catch(console.error);
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+console.log('🚀 Starting Islamic Prayer Tools API...');
+startServer();
