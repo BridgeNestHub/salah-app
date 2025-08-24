@@ -73,29 +73,4 @@ router.get('/geocode', async (req, res) => {
   }
 });
 
-// Find nearby places
-router.get('/places/nearby', async (req, res) => {
-  try {
-    const { lat, lng, type = 'mosque', radius = 8047 } = req.query;
-    
-    if (!lat || !lng) {
-      return res.status(400).json({ error: 'Latitude and longitude are required' });
-    }
-
-    const response = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
-      params: {
-        query: type,
-        location: `${lat},${lng}`,
-        radius,
-        key: process.env.GOOGLE_MAPS_API_KEY
-      }
-    });
-
-    res.json(response.data);
-  } catch (error) {
-    console.error('Nearby places API error:', error);
-    res.status(500).json({ error: 'Failed to fetch nearby places' });
-  }
-});
-
 export default router;
