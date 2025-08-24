@@ -105,19 +105,19 @@ const MosqueLocator: React.FC = () => {
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mapsLoaded, setMapsLoaded] = useState(false);
+  const [mapsLoaded, setMapsLoaded] = useState(false); // New state to track maps loading
 
   useEffect(() => {
     getCurrentLocation();
   }, []);
 
-  // Corrected useEffect to trigger search only when both location and maps are ready
+  // Corrected useEffect to trigger mosque search once location AND maps are ready
   useEffect(() => {
     if (userLocation && mapsLoaded) {
-      setLoading(true); // Set loading to true here to show the spinner
+      setLoading(true); // Start loading when conditions are met
       findNearbyMosques(userLocation.lat, userLocation.lng);
     }
-  }, [userLocation, mapsLoaded]);
+  }, [userLocation, mapsLoaded]); // The search should be triggered when these states change
 
   const getCurrentLocation = () => {
     setLoading(true);
@@ -129,7 +129,6 @@ const MosqueLocator: React.FC = () => {
             lng: position.coords.longitude
           };
           setUserLocation(location);
-          // Do NOT call findNearbyMosques here. Let the useEffect handle it.
         },
         () => {
           setError('Unable to get your location. Please enable location services.');
