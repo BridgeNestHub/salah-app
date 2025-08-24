@@ -158,19 +158,21 @@ const MosqueLocator: React.FC = () => {
         throw new Error('Google Maps API not loaded');
       }
 
-      // Use the legacy Places service instead of the new Places library
       const service = new google.maps.places.PlacesService(document.createElement('div'));
       
       const request = {
+        query: 'mosque',
         location: new google.maps.LatLng(lat, lng),
         radius: 8047,
-        type: 'place_of_worship',
       };
 
       const places = await new Promise<google.maps.places.PlaceResult[]>((resolve, reject) => {
-        service.nearbySearch(request, (results, status) => {
+        service.textSearch(request, (results, status) => {
+          console.log('Places API response:', status, results?.length);
           if (status === google.maps.places.PlacesServiceStatus.OK && results) {
             resolve(results);
+          } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+            resolve([]);
           } else {
             reject(new Error(`Places service failed: ${status}`));
           }
