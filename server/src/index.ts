@@ -101,7 +101,8 @@ const startServer = async () => {
       console.log('🛑 Received SIGTERM, shutting down gracefully...');
       server.close(() => {
         if (dbConnected) {
-          mongoose.connection.close(() => {
+          mongoose.connection.close((err) => {
+            if (err) console.error('Error closing database:', err);
             console.log('✅ Database connection closed');
             process.exit(0);
           });

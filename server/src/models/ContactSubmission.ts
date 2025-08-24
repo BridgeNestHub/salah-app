@@ -27,5 +27,4 @@ const ContactSubmissionSchema = new Schema({
 ContactSubmissionSchema.index({ status: 1 });
 ContactSubmissionSchema.index({ createdAt: -1 });
 
-const ContactSubmission = mongoose.model<IContactSubmission>('ContactSubmission', ContactSubmissionSchema);
-export default ContactSubmission;
+export default mongoose.model<IContactSubmission>('ContactSubmission', ContactSubmissionSchema);
