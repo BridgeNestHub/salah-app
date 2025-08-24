@@ -111,6 +111,12 @@ const MosqueLocator: React.FC = () => {
     getCurrentLocation();
   }, []);
 
+  useEffect(() => {
+    if (userLocation && mapsLoaded && mosques.length === 0 && !error) {
+      findNearbyMosques(userLocation.lat, userLocation.lng);
+    }
+  }, [userLocation, mapsLoaded]);
+
   const getCurrentLocation = () => {
     setLoading(true);
     setError(null);
@@ -122,9 +128,6 @@ const MosqueLocator: React.FC = () => {
             lng: position.coords.longitude
           };
           setUserLocation(location);
-          if (mapsLoaded) {
-            findNearbyMosques(location.lat, location.lng);
-          }
         },
         () => {
           setError('Unable to get your location. Please enable location services.');
@@ -226,12 +229,7 @@ const MosqueLocator: React.FC = () => {
         <Wrapper 
           apiKey={GOOGLE_MAPS_API_KEY} 
           libraries={['places']}
-          callback={() => {
-            setMapsLoaded(true);
-            if (userLocation && !mosques.length) {
-              findNearbyMosques(userLocation.lat, userLocation.lng);
-            }
-          }}
+          callback={() => setMapsLoaded(true)}
         >
           <GoogleMapComponent
             center={userLocation}
