@@ -152,53 +152,62 @@ const MosqueLocator: React.FC = () => {
   };
 
   const findNearbyMosques = async (lat: number, lng: number) => {
+    console.log('Starting mosque search for:', lat, lng);
     try {
       if (!window.google || !window.google.maps) {
         throw new Error('Google Maps API not loaded');
       }
 
-      const { Place } = await google.maps.importLibrary('places') as google.maps.PlacesLibrary;
+      // Use the legacy Places service instead of the new Places library
+      const service = new google.maps.places.PlacesService(document.createElement('div'));
       
       const request = {
-        textQuery: 'mosque',
-        fields: ['displayName', 'location', 'formattedAddress', 'rating', 'regularOpeningHours', 'photos', 'id'],
-        locationBias: {
-          center: { lat, lng },
-          radius: 8047,
-        },
-        maxResultCount: 20,
+        location: new google.maps.LatLng(lat, lng),
+        radius: 8047,
+        type: 'place_of_worship',
       };
 
-      const { places } = await Place.searchByText(request);
+      const places = await new Promise<google.maps.places.PlaceResult[]>((resolve, reject) => {
+        service.nearbySearch(request, (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+            resolve(results);
+          } else {
+            reject(new Error(`Places service failed: ${status}`));
+          }
+        });
+      });
       
       if (places && places.length > 0) {
         const mosqueData: Mosque[] = places.map((place) => {
           const mosque: Mosque = {
-            place_id: place.id!,
-            name: place.displayName || 'Mosque',
-            formatted_address: place.formattedAddress || 'Address not available',
+            place_id: place.place_id!,
+            name: place.name || 'Mosque',
+            formatted_address: place.vicinity || 'Address not available',
             geometry: {
               location: {
-                lat: place.location!.lat(),
-                lng: place.location!.lng(),
+                lat: place.geometry!.location!.lat(),
+                lng: place.geometry!.location!.lng(),
               },
             },
             rating: place.rating || undefined,
-            isOpen: undefined,
-            photos: place.photos?.slice(0, 1).map(photo => photo.getURI({ maxWidth: 400, maxHeight: 300 })),
-            distance: calculateDistance(lat, lng, place.location!.lat(), place.location!.lng()),
+            isOpen: place.opening_hours?.open_now,
+            photos: place.photos?.slice(0, 1).map(photo => photo.getUrl({ maxWidth: 400, maxHeight: 300 })),
+            distance: calculateDistance(lat, lng, place.geometry!.location!.lat(), place.geometry!.location!.lng()),
           };
           return mosque;
         });
 
+        console.log('Found mosques:', mosqueData.length);
         setMosques(mosqueData.sort((a, b) => (a.distance || 0) - (b.distance || 0)));
       } else {
+        console.log('No mosques found');
         setMosques([]);
       }
     } catch (error) {
       console.error('Error finding mosques:', error);
       setError(`Failed to load nearby mosques: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
+      console.log('Mosque search completed');
       setLoading(false);
     }
   };
