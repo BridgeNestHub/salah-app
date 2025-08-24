@@ -24,6 +24,8 @@ const QiblaCompass: React.FC = () => {
   const [compassCalibrated, setCompassCalibrated] = useState<boolean>(false);
   const [distance, setDistance] = useState<number>(0);
   const [accuracy, setAccuracy] = useState<number>(0);
+  const [showPermissionButton, setShowPermissionButton] = useState<boolean>(false);
+  const [isManualMode, setIsManualMode] = useState<boolean>(false);
   
   // Smoothing for compass readings
   const headingHistory = useRef<number[]>([]);
@@ -105,7 +107,7 @@ const QiblaCompass: React.FC = () => {
     bearing = (bearing + 360) % 360; // Normalize to 0-360
 
     // Calculate distance using Haversine formula
-    const R = 3959; // Earth's radius in miles
+    const R = 6371; // Earth's radius in km
     const dLat = lat2 - lat1;
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
               Math.cos(lat1) * Math.cos(lat2) *
@@ -118,46 +120,139 @@ const QiblaCompass: React.FC = () => {
 
   const setupCompass = async (): Promise<void> => {
     return new Promise(async (resolve) => {
-      // Request permission for iOS devices
+      let permissionGranted = false;
+      
+      // Check if DeviceOrientationEvent is available
+      if (!window.DeviceOrientationEvent) {
+        // Fallback to manual compass for devices without orientation sensors
+        setError('');
+        setCompassCalibrated(true);
+        resolve();
+        return;
+      }
+
+      // For iOS 13+ devices, request permission
       if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
         try {
+          // First try to request permission
           const response = await (DeviceOrientationEvent as any).requestPermission();
-          if (response !== 'granted') {
-            setError('Compass permission denied. Please allow sensor access.');
+          if (response === 'granted') {
+            permissionGranted = true;
+            setShowPermissionButton(false);
+          } else {
+            setError('Motion & orientation access is required for the compass to work.');
+            setShowPermissionButton(true);
             resolve();
             return;
           }
         } catch (error) {
-          setError('Compass not available on this device');
+          // If requestPermission fails, show permission button
+          console.log('Permission request failed, showing manual permission button');
+          setError('Tap "Enable Compass" to allow motion & orientation access.');
+          setShowPermissionButton(true);
           resolve();
           return;
         }
+      } else {
+        // For Android and older iOS versions, no permission needed
+        permissionGranted = true;
       }
 
-      // Add event listeners for compass
-      window.addEventListener('deviceorientationabsolute', handleOrientation as EventListener, true);
-      window.addEventListener('deviceorientation', handleOrientation as EventListener, true);
-      
-      setTimeout(() => setCompassCalibrated(true), 1000);
-      resolve();
+      if (permissionGranted) {
+        // Test if orientation events actually work
+        let orientationDetected = false;
+        
+        const testOrientation = (event: Event) => {
+          const orientationEvent = event as DeviceOrientationEvent;
+          if (orientationEvent.alpha !== null || orientationEvent.beta !== null || orientationEvent.gamma !== null) {
+            orientationDetected = true;
+          }
+        };
+
+        // Add test listener
+        window.addEventListener('deviceorientationabsolute', testOrientation, { passive: true } as AddEventListenerOptions);
+        window.addEventListener('deviceorientation', testOrientation, { passive: true } as AddEventListenerOptions);
+
+        // Wait for orientation data or timeout
+        setTimeout(() => {
+          window.removeEventListener('deviceorientationabsolute', testOrientation);
+          window.removeEventListener('deviceorientation', testOrientation);
+          
+          if (orientationDetected) {
+            // Orientation is working, add real listeners
+            window.addEventListener('deviceorientationabsolute', handleOrientation as EventListener, { passive: true } as AddEventListenerOptions);
+            window.addEventListener('deviceorientation', handleOrientation as EventListener, { passive: true } as AddEventListenerOptions);
+            
+            setTimeout(() => setCompassCalibrated(true), 1500);
+          } else {
+            // Orientation not detected, switch to manual mode
+            console.log('Orientation events not detected, switching to manual mode');
+            setIsManualMode(true);
+            setCompassCalibrated(true);
+          }
+          
+          resolve();
+        }, 2000);
+      }
     });
   };
 
   const handleOrientation = (event: Event) => {
     const orientationEvent = event as ExtendedDeviceOrientationEvent;
     let heading = 0;
+    let hasValidHeading = false;
 
-    if (orientationEvent.webkitCompassHeading !== undefined) {
-      // iOS Safari
+    // iOS Safari - webkitCompassHeading is most accurate
+    if (orientationEvent.webkitCompassHeading !== undefined && orientationEvent.webkitCompassHeading !== null) {
       heading = orientationEvent.webkitCompassHeading;
-    } else if (orientationEvent.alpha !== null) {
-      // Android Chrome and others
+      hasValidHeading = true;
+    }
+    // iOS Safari fallback - use alpha with correction
+    else if (orientationEvent.alpha !== null && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+      heading = orientationEvent.alpha;
+      hasValidHeading = true;
+    }
+    // Android Chrome and other browsers
+    else if (orientationEvent.alpha !== null) {
       heading = 360 - orientationEvent.alpha;
+      hasValidHeading = true;
     }
 
-    // Smooth the heading to reduce jitter
-    const smoothedHeading = smoothHeading(heading);
-    setDeviceHeading(smoothedHeading);
+    if (hasValidHeading) {
+      // Ensure heading is positive and within 0-360 range
+      heading = ((heading % 360) + 360) % 360;
+      
+      // Smooth the heading to reduce jitter
+      const smoothedHeading = smoothHeading(heading);
+      setDeviceHeading(smoothedHeading);
+      
+      // Mark compass as calibrated if we're getting valid readings
+      if (!compassCalibrated) {
+        setCompassCalibrated(true);
+      }
+    }
+  };
+
+  // Function to request permissions manually
+  const requestCompassPermission = async () => {
+    if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+      try {
+        const response = await (DeviceOrientationEvent as any).requestPermission();
+        if (response === 'granted') {
+          setError('');
+          setShowPermissionButton(false);
+          setupCompass();
+        } else {
+          setError('Please allow motion & orientation access in Safari settings to use the compass feature.');
+        }
+      } catch (error) {
+        setError('Unable to request compass permission. Please check your browser settings.');
+      }
+    } else {
+      // For non-iOS devices, just reinitialize
+      setError('');
+      initializeQibla();
+    }
   };
 
   // 5-point moving average for smooth compass movement
@@ -185,7 +280,7 @@ const QiblaCompass: React.FC = () => {
   const toDegrees = (radians: number): number => radians * 180 / Math.PI;
 
   // Calculate the rotation for the Qibla needle
-  const qiblaRotation = compassCalibrated ? qiblaDirection - deviceHeading : qiblaDirection;
+  const qiblaRotation = (compassCalibrated && !isManualMode) ? qiblaDirection - deviceHeading : qiblaDirection;
 
   const getDirectionText = (): string => {
     const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
@@ -195,14 +290,10 @@ const QiblaCompass: React.FC = () => {
   };
 
   const formatDistance = (dist: number): string => {
-    if (dist < 1) {
-      // Convert to feet for very short distances
-      const feet = Math.round(dist * 5280);
-      return `${feet} ft`;
-    } else if (dist < 1000) {
-      return `${Math.round(dist)} mi`;
+    if (dist < 1000) {
+      return `${Math.round(dist)} km`;
     } else {
-      return `${(dist / 1000).toFixed(1)}K mi`;
+      return `${(dist / 1000).toFixed(1)}K km`;
     }
   };
 
@@ -225,14 +316,46 @@ const QiblaCompass: React.FC = () => {
     return (
       <div className="error-container">
         <div className="error-content">
-          <h3 className="error-title">⚠️ Compass Error</h3>
+          <h3 className="error-title">⚠️ Compass Access</h3>
           <p className="error-message">{error}</p>
-          <button 
-            onClick={initializeQibla} 
-            className="retry-button"
-          >
-            🔄 Try Again
-          </button>
+          
+          {showPermissionButton ? (
+            <div>
+              <button 
+                onClick={requestCompassPermission} 
+                className="retry-button"
+                style={{ marginBottom: '12px' }}
+              >
+                🧭 Enable Compass
+              </button>
+              <button 
+                onClick={() => {
+                  setError('');
+                  setIsManualMode(true);
+                  setCompassCalibrated(true);
+                  setShowPermissionButton(false);
+                }} 
+                className="retry-button"
+                style={{ backgroundColor: '#6b7280', marginBottom: '12px' }}
+              >
+                📍 Use Manual Mode
+              </button>
+              <button 
+                onClick={initializeQibla} 
+                className="retry-button"
+                style={{ backgroundColor: '#374151' }}
+              >
+                🔄 Try Again
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={initializeQibla} 
+              className="retry-button"
+            >
+              🔄 Try Again
+            </button>
+          )}
         </div>
       </div>
     );
@@ -247,9 +370,9 @@ const QiblaCompass: React.FC = () => {
         </h1> */}
         <div className={`calibration-status ${compassCalibrated ? 'status-active' : 'status-calibrating'}`}>
           {compassCalibrated ? (
-            <span>🧭 Compass Active</span>
+            <span>{isManualMode ? '🧭 Manual Mode' : '🧭 Compass Active'}</span>
           ) : (
-            <span>📱 Calibrating compass...</span>
+            <span>📱 Initializing...</span>
           )}
         </div>
       </div>
@@ -318,7 +441,7 @@ const QiblaCompass: React.FC = () => {
       {/* Information cards */}
       <div className="info-cards">
         <div className="info-card">
-          <div className="info-label">🕋 Qibla Direction</div>
+          <div className="info-label">🧭 Qibla Direction</div>
           <div className="info-value">
             {Math.round(qiblaDirection)}° {getDirectionText()}
           </div>
@@ -339,7 +462,7 @@ const QiblaCompass: React.FC = () => {
             </div>
             {accuracy > 0 && (
               <div className="accuracy-text">
-                Accuracy: ±{Math.round(accuracy * 3.28084)}ft
+                Accuracy: ±{Math.round(accuracy)}m
               </div>
             )}
           </div>
@@ -356,6 +479,17 @@ const QiblaCompass: React.FC = () => {
             📱 Move your device in a figure-8 pattern to calibrate the compass
           </p>
         )}
+        
+        {/* iOS-specific instructions */}
+        {/iPad|iPhone|iPod/.test(navigator.userAgent) && (
+          <div className="instructions-tip" style={{ marginTop: '16px', padding: '12px', backgroundColor: 'rgba(251, 191, 36, 0.1)', borderRadius: '8px', border: '1px solid rgba(251, 191, 36, 0.2)' }}>
+            <strong style={{ color: '#fbbf24' }}>📱 iOS Users:</strong>
+            <br />• Allow Motion & Orientation access when prompted
+            <br />• If compass isn't working, go to Settings → Safari → Motion & Orientation Access → Enable
+            <br />• Make sure "Location Services" is enabled in Settings
+          </div>
+        )}
+        
         <div className="instructions-tip">
           For best accuracy, hold your device horizontally and away from magnetic interference
         </div>
