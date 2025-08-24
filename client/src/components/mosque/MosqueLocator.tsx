@@ -30,8 +30,11 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({ center, zoom, mosques, o
 
   useEffect(() => {
     if (map) {
+      const infoWindow = new google.maps.InfoWindow();
+      const markers: google.maps.Marker[] = [];
+
       // User location marker
-      new google.maps.Marker({
+      markers.push(new google.maps.Marker({
         position: center,
         map,
         title: 'Your Location',
@@ -43,7 +46,7 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({ center, zoom, mosques, o
           `),
           scaledSize: new google.maps.Size(24, 24),
         },
-      });
+      }));
 
       // Mosque markers
       mosques.forEach((mosque) => {
@@ -62,37 +65,39 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({ center, zoom, mosques, o
             scaledSize: new google.maps.Size(32, 32),
           },
         });
+        markers.push(marker);
 
-        const infoWindow = new google.maps.InfoWindow({
-          content: `
-            <div style="max-width: 250px;">
-              <h4 style="margin: 0 0 8px 0;">${mosque.name}</h4>
-              <p style="margin: 0 0 8px 0; font-size: 14px;">${mosque.formatted_address}</p>
-              ${mosque.rating ? `<p style="margin: 0 0 8px 0;">⭐ ${mosque.rating}/5</p>` : ''}
-              ${mosque.isOpen !== undefined ? `<p style="margin: 0 0 8px 0; color: ${mosque.isOpen ? '#28a745' : '#dc3545'};">• ${mosque.isOpen ? 'Open Now' : 'Closed'}</p>` : ''}
-              ${mosque.distance ? `<p style="margin: 0 0 12px 0;"><strong>Distance:</strong> ${mosque.distance.toFixed(2)} miles</p>` : ''}
-              <div style="display: flex; gap: 8px;">
-                <button onclick="window.getDirections('${mosque.place_id}')" style="padding: 4px 8px; background: #4285F4; color: white; border: none; border-radius: 4px; cursor: pointer;">Directions</button>
-                <button onclick="window.openStreetView('${mosque.place_id}')" style="padding: 4px 8px; background: #34A853; color: white; border: none; border-radius: 4px; cursor: pointer;">Street View</button>
-              </div>
+        const contentString = `
+          <div style="max-width: 250px;">
+            <h4 style="margin: 0 0 8px 0;">${mosque.name}</h4>
+            <p style="margin: 0 0 8px 0; font-size: 14px;">${mosque.formatted_address}</p>
+            ${mosque.rating ? `<p style="margin: 0 0 8px 0;">⭐ ${mosque.rating}/5</p>` : ''}
+            ${mosque.isOpen !== undefined ? `<p style="margin: 0 0 8px 0; color: ${mosque.isOpen ? '#28a745' : '#dc3545'};">• ${mosque.isOpen ? 'Open Now' : 'Closed'}</p>` : ''}
+            ${mosque.distance ? `<p style="margin: 0 0 12px 0;"><strong>Distance:</strong> ${mosque.distance.toFixed(2)} miles</p>` : ''}
+            <div style="display: flex; gap: 8px;">
+              <button id="directions-btn-${mosque.place_id}" style="padding: 4px 8px; background: #4285F4; color: white; border: none; border-radius: 4px; cursor: pointer;">Directions</button>
+              <button id="streetview-btn-${mosque.place_id}" style="padding: 4px 8px; background: #34A853; color: white; border: none; border-radius: 4px; cursor: pointer;">Street View</button>
             </div>
-          `,
-        });
+          </div>
+        `;
 
         marker.addListener('click', () => {
+          infoWindow.setContent(contentString);
           infoWindow.open(map, marker);
+
+          setTimeout(() => {
+            document.getElementById(`directions-btn-${mosque.place_id}`)?.addEventListener('click', () => {
+              onDirections(mosque);
+            });
+            document.getElementById(`streetview-btn-${mosque.place_id}`)?.addEventListener('click', () => {
+              onStreetView(mosque);
+            });
+          }, 0);
         });
       });
-
-      // Global functions for info window buttons
-      (window as any).getDirections = (placeId: string) => {
-        const mosque = mosques.find(m => m.place_id === placeId);
-        if (mosque) onDirections(mosque);
-      };
-
-      (window as any).openStreetView = (placeId: string) => {
-        const mosque = mosques.find(m => m.place_id === placeId);
-        if (mosque) onStreetView(mosque);
+      
+      return () => {
+        markers.forEach(marker => marker.setMap(null));
       };
     }
   }, [map, mosques, center, onDirections, onStreetView]);
@@ -112,7 +117,8 @@ const MosqueLocator: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (userLocation && mapsLoaded && mosques.length === 0 && !error) {
+    if (userLocation && mapsLoaded) {
+      setLoading(true);
       findNearbyMosques(userLocation.lat, userLocation.lng);
     }
   }, [userLocation, mapsLoaded]);
@@ -129,9 +135,14 @@ const MosqueLocator: React.FC = () => {
           };
           setUserLocation(location);
         },
-        () => {
-          setError('Unable to get your location. Please enable location services.');
+        (geolocationError) => {
+          setError(`Unable to get your location: ${geolocationError.message}`);
           setLoading(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000
         }
       );
     } else {
@@ -142,7 +153,11 @@ const MosqueLocator: React.FC = () => {
 
   const findNearbyMosques = async (lat: number, lng: number) => {
     try {
-      const { Place } = await window.google.maps.importLibrary('places') as google.maps.PlacesLibrary;
+      if (!window.google || !window.google.maps) {
+        throw new Error('Google Maps API not loaded');
+      }
+
+      const { Place } = await google.maps.importLibrary('places') as google.maps.PlacesLibrary;
       
       const request = {
         textQuery: 'mosque',
@@ -157,21 +172,24 @@ const MosqueLocator: React.FC = () => {
       const { places } = await Place.searchByText(request);
       
       if (places && places.length > 0) {
-        const mosqueData: Mosque[] = places.map((place) => ({
-          place_id: place.id!,
-          name: place.displayName || 'Mosque',
-          formatted_address: place.formattedAddress || 'Address not available',
-          geometry: {
-            location: {
-              lat: place.location!.lat(),
-              lng: place.location!.lng(),
+        const mosqueData: Mosque[] = places.map((place) => {
+          const mosque: Mosque = {
+            place_id: place.id!,
+            name: place.displayName || 'Mosque',
+            formatted_address: place.formattedAddress || 'Address not available',
+            geometry: {
+              location: {
+                lat: place.location!.lat(),
+                lng: place.location!.lng(),
+              },
             },
-          },
-          rating: place.rating || undefined,
-          isOpen: undefined,
-          photos: place.photos?.slice(0, 1).map(photo => photo.getURI({ maxWidth: 400, maxHeight: 300 })),
-          distance: calculateDistance(lat, lng, place.location!.lat(), place.location!.lng()),
-        }));
+            rating: place.rating || undefined,
+            isOpen: undefined,
+            photos: place.photos?.slice(0, 1).map(photo => photo.getURI({ maxWidth: 400, maxHeight: 300 })),
+            distance: calculateDistance(lat, lng, place.location!.lat(), place.location!.lng()),
+          };
+          return mosque;
+        });
 
         setMosques(mosqueData.sort((a, b) => (a.distance || 0) - (b.distance || 0)));
       } else {
@@ -179,7 +197,7 @@ const MosqueLocator: React.FC = () => {
       }
     } catch (error) {
       console.error('Error finding mosques:', error);
-      setError('Failed to load nearby mosques. Please try again.');
+      setError(`Failed to load nearby mosques: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -207,16 +225,26 @@ const MosqueLocator: React.FC = () => {
   };
 
   if (!GOOGLE_MAPS_API_KEY) {
-    return <div className="error">Google Maps API key is required. Please add REACT_APP_GOOGLE_MAPS_API_KEY to your .env file.</div>;
+    return (
+      <div className="error">
+        <h3>❌ Configuration Error</h3>
+        <p>Google Maps API key is required. Please add REACT_APP_GOOGLE_MAPS_API_KEY to your .env file.</p>
+      </div>
+    );
   }
 
   if (loading) {
-    return <div className="loading">🔍 Finding nearby mosques...</div>;
+    return (
+      <div className="loading">
+        <h3>🔍 Finding nearby mosques...</h3>
+      </div>
+    );
   }
 
   if (error) {
     return (
       <div className="error">
+        <h3>❌ Error</h3>
         <p>{error}</p>
         <button onClick={getCurrentLocation} className="btn-primary">Try Again</button>
       </div>
@@ -244,7 +272,7 @@ const MosqueLocator: React.FC = () => {
       <div className="mosque-list">
         <h3>🕌 Nearby Mosques ({mosques.length} found)</h3>
         {mosques.length === 0 ? (
-          <p>No mosques found in your area. Try expanding your search radius.</p>
+          <p>No mosques found in your area. Try expanding your search radius or check your internet connection.</p>
         ) : (
           <ul>
             {mosques.slice(0, 10).map((mosque) => (
