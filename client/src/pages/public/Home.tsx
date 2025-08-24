@@ -28,7 +28,7 @@ const Home: React.FC = () => {
         </section>
 
         <section className="section">
-          <h2 className="text-center">Qibla Direction</h2>
+          <h2 className="text-center">🕋 Qibla Direction</h2>
           <QiblaCompass />
         </section>
 

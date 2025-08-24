@@ -1,237 +1,404 @@
-.qibla-container {
+/* QiblaCompass.css - Complete styling without Tailwind dependency */
+
+* {
+  box-sizing: border-box;
+}
+
+.qibla-main-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 75%, #475569 100%);
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
-  padding: 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 80vh;
-  border-radius: 20px;
-  margin: 1rem;
+  padding: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.loading, .error-msg {
-  padding: 1rem 2rem;
-  border-radius: 10px;
-  font-weight: 600;
+/* Header Styles */
+.qibla-header {
+  text-align: center;
+  margin-bottom: 32px;
+  margin-top: 16px;
+}
+
+.qibla-title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  background: linear-gradient(45deg, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: #fbbf24; /* Fallback for browsers that don't support background-clip */
+}
+
+.calibration-status {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+  border: 1px solid;
+  font-size: 0.9rem;
+}
+
+.status-active {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.4);
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+.status-calibrating {
+  color: #fb923c;
+  border-color: rgba(251, 146, 60, 0.4);
+  background-color: rgba(251, 146, 60, 0.1);
+}
+
+/* Loading Styles */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 75%, #475569 100%);
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  padding: 16px;
+}
+
+.loading-content {
   text-align: center;
 }
 
-.loading {
-  background: rgba(255, 255, 255, 0.9);
-  color: #667eea;
+.loading-spinner {
+  width: 64px;
+  height: 64px;
+  border: 4px solid rgba(251, 191, 36, 0.3);
+  border-top: 4px solid #fbbf24;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 24px;
 }
 
-.error-msg {
-  background: rgba(255, 107, 107, 0.9);
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text-large {
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+}
+
+.loading-text-medium {
+  font-size: 1.125rem;
+  margin-bottom: 8px;
+}
+
+.loading-text-small {
+  font-size: 0.875rem;
+  color: #cbd5e1;
+}
+
+/* Error Styles */
+.error-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 75%, #475569 100%);
   color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  padding: 16px;
+}
+
+.error-content {
+  text-align: center;
+  background-color: rgba(153, 27, 27, 0.2);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 16px;
+  padding: 32px;
+}
+
+.error-title {
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+  color: #f87171;
+}
+
+.error-message {
+  margin-bottom: 24px;
+  color: #fca5a5;
+}
+
+.retry-button {
+  background-color: #16a34a;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.retry-button:hover {
+  background-color: #15803d;
+}
+
+/* Compass Container */
+.compass-container {
+  position: relative;
+  margin-bottom: 32px;
 }
 
 .compass-wrapper {
   position: relative;
-  padding: 2rem;
+  width: 320px;
+  height: 320px;
 }
 
 .compass-circle {
-  position: relative;
-  width: 300px;
-  height: 300px;
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, #ffffff 0%, #f0f0f0 100%);
-  border: 8px solid #2c3e50;
-  box-shadow: 
-    0 0 0 4px #ecf0f1,
-    0 20px 40px rgba(0, 0, 0, 0.3),
-    inset 0 0 20px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 4px solid rgba(251, 191, 36, 0.3);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 25px 50px -12px rgba(251, 191, 36, 0.2);
 }
 
-.compass-marks {
+/* Degree Markings */
+.degree-markings {
   position: absolute;
-  width: 100%;
-  height: 100%;
-}
-
-.degree-marks {
-  position: absolute;
-  width: 100%;
-  height: 100%;
+  inset: 0;
+  border-radius: 50%;
 }
 
 .degree-mark {
   position: absolute;
+  left: 50%;
+  top: 4px;
+  transform-origin: 50% 156px;
+}
+
+.degree-mark-small {
+  width: 1px;
+  height: 16px;
+  background-color: rgba(255, 255, 255, 0.6);
+  margin-left: -0.5px;
+}
+
+.degree-mark-major {
   width: 2px;
-  height: 15px;
-  background: #34495e;
-  transform-origin: bottom center;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.8);
+  margin-left: -1px;
 }
 
-.degree-mark.major {
-  height: 25px;
-  width: 3px;
-  background: #2c3e50;
+.degree-mark-cardinal {
+  width: 4px;
+  height: 32px;
+  background-color: #fbbf24;
+  margin-left: -2px;
 }
 
-.degree-number {
+/* Cardinal Directions */
+.cardinal-directions {
   position: absolute;
-  font-size: 0.8rem;
-  font-weight: bold;
-  color: #2c3e50;
-  transform: translate(-50%, -50%);
+  inset: 0;
 }
 
-.mark {
+.cardinal-direction {
   position: absolute;
-  font-weight: bold;
-  font-size: 1.2rem;
-  color: #2c3e50;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fbbf24;
 }
 
-.mark.north {
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #e74c3c;
-}
-
-.mark.east {
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.mark.south {
-  bottom: 10px;
+.cardinal-north {
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
 }
 
-.mark.west {
-  left: 15px;
+.cardinal-east {
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
 }
 
+.cardinal-south {
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.cardinal-west {
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Qibla Needle */
 .qibla-needle {
   position: absolute;
-  width: 4px;
-  height: 120px;
-  background: linear-gradient(to top, #27ae60 0%, #2ecc71 100%);
-  transform-origin: 50% 100%;
-  transition: transform 0.5s ease;
-  border-radius: 2px 2px 0 0;
-  box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
   top: 50%;
   left: 50%;
-  margin-left: -2px;
-  margin-top: -120px;
+  width: 2px;
+  height: 128px;
+  transform-origin: 50% 100%;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.needle-tip {
+.needle-line {
   position: absolute;
-  top: -40px;
-  left: -18px;
-  font-size: 36px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  inset: 0;
+  background: linear-gradient(to top, #fbbf24, #f59e0b);
+  border-radius: 9999px;
+  box-shadow: 0 4px 6px rgba(251, 191, 36, 0.6);
 }
 
-.needle-tip::after {
-  content: attr(data-degree);
+.kaaba-icon {
   position: absolute;
-  top: -20px;
-  left: -10px;
-  font-size: 12px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 2px 6px;
-  border-radius: 8px;
-  color: #2c3e50;
-  font-weight: bold;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.875rem;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)) brightness(1.1);
 }
 
+/* Center Point */
 .compass-center {
   position: absolute;
+  top: 50%;
+  left: 50%;
   width: 16px;
   height: 16px;
-  background: #34495e;
+  background: linear-gradient(135deg, #fde68a, #fbbf24);
   border-radius: 50%;
-  border: 3px solid #ecf0f1;
-  z-index: 10;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 4px 6px rgba(251, 191, 36, 0.6);
 }
 
-.compass-info {
-  position: absolute;
+/* Information Cards */
+.info-cards {
+  width: 100%;
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.info-card {
+  background-color: rgba(30, 41, 59, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: 16px;
+  padding: 24px;
   text-align: center;
-  top: 60%;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 12px;
-  border-radius: 15px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.direction-text {
-  font-size: 1.4rem;
-  font-weight: bold;
-  color: #27ae60;
-  margin-bottom: 4px;
-}
-
-.location-text {
-  font-size: 0.9rem;
-  color: #2c3e50;
-  font-weight: 600;
-}
-
-
-
-.refresh-btn {
-  background: linear-gradient(135deg, #3498db, #2980b9);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 25px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
-}
-
-.refresh-btn:hover {
+.info-card:hover {
+  border-color: rgba(251, 191, 36, 0.4);
+  box-shadow: 0 4px 6px rgba(251, 191, 36, 0.1);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
 }
 
-.controls {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  align-items: center;
+.info-label {
+  font-size: 0.875rem;
+  color: #cbd5e1;
+  margin-bottom: 8px;
 }
 
-.manual-compass {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
+.info-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(45deg, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: #fbbf24; /* Fallback */
 }
 
-.manual-compass label {
-  font-weight: 600;
-  color: #2c3e50;
+.info-value-small {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #fef3c7;
 }
 
-.compass-status {
-  background: rgba(255, 255, 255, 0.9);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  color: #2c3e50;
-  margin-top: 1rem;
+.accuracy-text {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 4px;
 }
 
+/* Instructions */
+.instructions-container {
+  background-color: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  max-width: 28rem;
+}
+
+.instructions-main {
+  color: #e2e8f0;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.instructions-calibration {
+  color: #fbbf24;
+  font-size: 0.875rem;
+  margin-bottom: 12px;
+}
+
+.instructions-tip {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+/* Mobile Responsiveness */
 @media (max-width: 768px) {
-  .compass-circle {
+  .qibla-title {
+    font-size: 2rem;
+  }
+  
+  .compass-wrapper {
+    width: 280px;
+    height: 280px;
+  }
+  
+  .qibla-needle {
+    height: 112px;
+  }
+  
+  .kaaba-icon {
+    font-size: 1.5rem;
+  }
+  
+  .degree-mark {
+    transform-origin: 50% 136px;
+  }
+}
+
+@media (max-width: 480px) {
+  .qibla-main-container {
+    padding: 12px;
+  }
+  
+  .compass-wrapper {
     width: 250px;
     height: 250px;
   }
@@ -240,8 +407,31 @@
     height: 100px;
   }
   
-  .info-panel {
-    min-width: auto;
-    width: 100%;
+  .degree-mark {
+    transform-origin: 50% 121px;
   }
+}
+
+/* Accessibility & Performance */
+@media (prefers-reduced-motion: reduce) {
+  .qibla-needle,
+  .info-card,
+  .retry-button {
+    transition: none;
+  }
+  
+  .loading-spinner {
+    animation: none;
+  }
+}
+
+/* Prevent text selection on interactive elements */
+.compass-circle,
+.qibla-needle,
+.cardinal-directions {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }

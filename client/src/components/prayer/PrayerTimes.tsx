@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../types/google-maps.ts';
+import { athanService } from '../../services/athanNotification';
+import '../../styles/athan-notification.css';
 
 interface PrayerTimings {
   Fajr: string;
@@ -31,6 +33,8 @@ const PrayerTimes: React.FC = () => {
   const [prayerData, setPrayerData] = useState<PrayerData | null>(null);
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [volume, setVolume] = useState(0.8);
 
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
@@ -125,6 +129,11 @@ const PrayerTimes: React.FC = () => {
       const data = await response.json();
       setPrayerData(data.data);
       setLocation(city);
+      
+      // Schedule Athan notifications
+      if (notificationsEnabled && data.data?.timings) {
+        athanService.scheduleAthanNotifications(data.data.timings);
+      }
     } catch (error) {
       console.error('Error fetching prayer times:', error);
     } finally {
@@ -197,6 +206,12 @@ const PrayerTimes: React.FC = () => {
       );
       const data = await response.json();
       setPrayerData(data.data);
+      
+      // Schedule Athan notifications
+      if (notificationsEnabled && data.data?.timings) {
+        athanService.scheduleAthanNotifications(data.data.timings);
+      }
+      
       // Don't update location if it's already set by geocoder
       if (!location || location.includes(',')) {
         // Keep existing location or set a generic one
@@ -293,6 +308,49 @@ const PrayerTimes: React.FC = () => {
       <div className="date-display">
         <div>{prayerData.date.hijri.day} {prayerData.date.hijri.month.en} {prayerData.date.hijri.year} AH</div>
         <div>{prayerData.date.gregorian.weekday.en}, {prayerData.date.gregorian.day} {prayerData.date.gregorian.month.en} {prayerData.date.gregorian.year}</div>
+      </div>
+
+      <div className="notification-settings">
+        <h4>🔔 Athan Notifications</h4>
+        <div className="notification-toggle">
+          <input
+            type="checkbox"
+            id="notifications"
+            checked={notificationsEnabled}
+            onChange={(e) => {
+              setNotificationsEnabled(e.target.checked);
+              if (e.target.checked && prayerData?.timings) {
+                athanService.scheduleAthanNotifications(prayerData.timings);
+              } else {
+                athanService.clearScheduledNotifications();
+              }
+            }}
+          />
+          <label htmlFor="notifications">Enable Athan notifications with sound</label>
+        </div>
+        <div className="volume-control">
+          <span>🔊 Volume:</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            value={volume}
+            onChange={(e) => {
+              const newVolume = parseFloat(e.target.value);
+              setVolume(newVolume);
+              athanService.setVolume(newVolume);
+            }}
+            className="volume-slider"
+          />
+          <span>{Math.round(volume * 100)}%</span>
+          <button
+            onClick={() => athanService.testAthansound()}
+            className="test-button"
+          >
+            Test Sound
+          </button>
+        </div>
       </div>
 
       <div className="prayer-times-grid">

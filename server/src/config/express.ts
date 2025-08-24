@@ -12,6 +12,7 @@ import adminEventsRoutes from '../routes/admin/events';
 import staffEventsRoutes from '../routes/staff/events';
 import publicContactRoutes from '../routes/public/contact';
 import staffContactRoutes from '../routes/staff/contact';
+import publicMapsRoutes from '../routes/public/maps';
 
 export const configureExpress = (app: express.Application) => {
   // Security middleware
@@ -44,6 +45,7 @@ export const configureExpress = (app: express.Application) => {
   app.use('/api/staff/events', staffEventsRoutes);
   app.use('/api/contact', publicContactRoutes);
   app.use('/api/staff/contact', staffContactRoutes);
+  app.use('/api/maps', publicMapsRoutes);
 
   // Serve React build files in production
   if (process.env.NODE_ENV === 'production') {

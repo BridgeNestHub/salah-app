@@ -1,0 +1,28 @@
+ATHAN AUDIO SETUP INSTRUCTIONS
+==============================
+
+To enable Athan sound notifications, you need to add an Athan audio file:
+
+1. DOWNLOAD ATHAN AUDIO:
+   - Find a high-quality Athan MP3 file (30-60 seconds)
+   - Recommended: Traditional Mecca Athan or Medina Athan
+   - Sources: Islamic websites, mosque recordings, or audio libraries
+
+2. FILE REQUIREMENTS:
+   - Format: MP3
+   - Name: exactly "athan.mp3" (lowercase)
+   - Location: /client/public/athan.mp3
+   - Duration: 30-60 seconds recommended
+   - Quality: 128kbps or higher
+
+3. INSTALLATION:
+   - Place the athan.mp3 file in this directory (/client/public/)
+   - Restart your development server
+   - Test using the "Test Sound" button in the prayer times page
+
+4. LEGAL CONSIDERATIONS:
+   - Ensure you have rights to use the audio file
+   - Many Islamic organizations provide free Athan recordings
+   - Consider using royalty-free Islamic audio
+
+The notification system is already implemented and will work once you add the audio file.
