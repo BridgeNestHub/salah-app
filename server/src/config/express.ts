@@ -17,8 +17,19 @@ import publicPrayerRoutes from '../routes/public/prayer';
 import publicLocationRoutes from '../routes/public/location';
 
 export const configureExpress = (app: express.Application) => {
-  // Security middleware
-  app.use(helmet());
+  // Security middleware with custom CSP
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", "https://api.aladhan.com", "https://api.alquran.cloud"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://maps.googleapis.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https:"],
+      },
+    },
+  }));
   app.use(cors({
     origin: ['http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
