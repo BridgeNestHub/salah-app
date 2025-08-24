@@ -3,6 +3,7 @@ import { Wrapper } from '@googlemaps/react-wrapper';
 import { Mosque } from '../../types/google-maps';
 
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
+console.log('Google Maps API Key loaded:', GOOGLE_MAPS_API_KEY ? 'Yes' : 'No');
 
 interface GoogleMapProps {
   center: google.maps.LatLngLiteral;
@@ -117,7 +118,9 @@ const MosqueLocator: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    console.log('useEffect triggered:', { userLocation, mapsLoaded });
     if (userLocation && mapsLoaded) {
+      console.log('Starting mosque search...');
       setLoading(true);
       findNearbyMosques(userLocation.lat, userLocation.lng);
     }
@@ -136,13 +139,14 @@ const MosqueLocator: React.FC = () => {
           setUserLocation(location);
         },
         (geolocationError) => {
+          console.error('Geolocation error:', geolocationError);
           setError(`Unable to get your location: ${geolocationError.message}`);
           setLoading(false);
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000
+          timeout: 15000,
+          maximumAge: 60000
         }
       );
     } else {
@@ -240,6 +244,7 @@ const MosqueLocator: React.FC = () => {
       <div className="error">
         <h3>❌ Configuration Error</h3>
         <p>Google Maps API key is required. Please add REACT_APP_GOOGLE_MAPS_API_KEY to your .env file.</p>
+        <p>Current key: {GOOGLE_MAPS_API_KEY ? 'Set' : 'Not set'}</p>
       </div>
     );
   }
