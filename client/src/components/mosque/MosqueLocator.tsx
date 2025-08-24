@@ -105,23 +105,13 @@ const MosqueLocator: React.FC = () => {
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mapsLoaded, setMapsLoaded] = useState(false);
 
   useEffect(() => {
     getCurrentLocation();
   }, []);
 
-  // Corrected useEffect to trigger mosque search once location and maps are ready
-  useEffect(() => {
-    if (userLocation && mapsLoaded) {
-      setLoading(true);
-      findNearbyMosques(userLocation.lat, userLocation.lng);
-    }
-  }, [userLocation, mapsLoaded]);
-
   const getCurrentLocation = () => {
     setLoading(true);
-    setError(null);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -130,6 +120,7 @@ const MosqueLocator: React.FC = () => {
             lng: position.coords.longitude
           };
           setUserLocation(location);
+          findNearbyMosques(location.lat, location.lng);
         },
         () => {
           setError('Unable to get your location. Please enable location services.');
@@ -144,7 +135,7 @@ const MosqueLocator: React.FC = () => {
 
   const findNearbyMosques = async (lat: number, lng: number) => {
     try {
-      const { Place } = await window.google.maps.importLibrary('places') as google.maps.PlacesLibrary;
+      const { Place } = await google.maps.importLibrary('places') as google.maps.PlacesLibrary;
       
       const request = {
         textQuery: 'mosque',
@@ -228,11 +219,7 @@ const MosqueLocator: React.FC = () => {
   return (
     <div className="mosque-locator">
       {userLocation && (
-        <Wrapper 
-          apiKey={GOOGLE_MAPS_API_KEY} 
-          libraries={['places']}
-          callback={() => setMapsLoaded(true)}
-        >
+        <Wrapper apiKey={GOOGLE_MAPS_API_KEY} libraries={['places']}>
           <GoogleMapComponent
             center={userLocation}
             zoom={13}
