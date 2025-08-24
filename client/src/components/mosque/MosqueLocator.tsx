@@ -112,6 +112,7 @@ const MosqueLocator: React.FC = () => {
 
   const getCurrentLocation = () => {
     setLoading(true);
+    setError(null);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -120,7 +121,10 @@ const MosqueLocator: React.FC = () => {
             lng: position.coords.longitude
           };
           setUserLocation(location);
-          findNearbyMosques(location.lat, location.lng);
+          // Add a small delay to ensure Google Maps API is loaded
+          setTimeout(() => {
+            findNearbyMosques(location.lat, location.lng);
+          }, 1000);
         },
         () => {
           setError('Unable to get your location. Please enable location services.');
@@ -135,7 +139,12 @@ const MosqueLocator: React.FC = () => {
 
   const findNearbyMosques = async (lat: number, lng: number) => {
     try {
-      const { Place } = await google.maps.importLibrary('places') as google.maps.PlacesLibrary;
+      // Check if Google Maps API is available
+      if (typeof window.google === 'undefined') {
+        throw new Error('Google Maps API not loaded');
+      }
+
+      const { Place } = await window.google.maps.importLibrary('places') as google.maps.PlacesLibrary;
       
       const request = {
         textQuery: 'mosque',
