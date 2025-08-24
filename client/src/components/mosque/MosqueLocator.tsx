@@ -105,10 +105,19 @@ const MosqueLocator: React.FC = () => {
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mapsLoaded, setMapsLoaded] = useState(false);
 
   useEffect(() => {
     getCurrentLocation();
   }, []);
+
+  // Corrected useEffect to trigger search only when both location and maps are ready
+  useEffect(() => {
+    if (userLocation && mapsLoaded) {
+      setLoading(true); // Set loading to true here to show the spinner
+      findNearbyMosques(userLocation.lat, userLocation.lng);
+    }
+  }, [userLocation, mapsLoaded]);
 
   const getCurrentLocation = () => {
     setLoading(true);
@@ -120,7 +129,7 @@ const MosqueLocator: React.FC = () => {
             lng: position.coords.longitude
           };
           setUserLocation(location);
-          findNearbyMosques(location.lat, location.lng);
+          // Do NOT call findNearbyMosques here. Let the useEffect handle it.
         },
         () => {
           setError('Unable to get your location. Please enable location services.');
@@ -219,7 +228,11 @@ const MosqueLocator: React.FC = () => {
   return (
     <div className="mosque-locator">
       {userLocation && (
-        <Wrapper apiKey={GOOGLE_MAPS_API_KEY} libraries={['places']}>
+        <Wrapper 
+          apiKey={GOOGLE_MAPS_API_KEY} 
+          libraries={['places']}
+          callback={() => setMapsLoaded(true)}
+        >
           <GoogleMapComponent
             center={userLocation}
             zoom={13}
