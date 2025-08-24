@@ -49,8 +49,6 @@ const PrayerTimes: React.FC = () => {
 
   useEffect(() => {
     initializeLocation();
-    // Setup Google autocomplete after a short delay to ensure API is loaded
-    setTimeout(setupGoogleAutocomplete, 1000);
   }, []);
 
   const initializeLocation = async () => {
@@ -73,7 +71,7 @@ const PrayerTimes: React.FC = () => {
 
   const getApproximateLocation = () => {
     // Get user's approximate location based on IP
-    fetch('https://ipapi.co/json/')
+    fetch('/api/location/ip-location')
       .then(response => response.json())
       .then(data => {
         const city = `${data.city}, ${data.region}, ${data.country_name}`;
@@ -87,36 +85,7 @@ const PrayerTimes: React.FC = () => {
       });
   };
 
-  const setupGoogleAutocomplete = () => {
-    if (window.google && window.google.maps && window.google.maps.places) {
-      const input = document.getElementById('location-input') as HTMLInputElement;
-      if (input) {
-        try {
-          const autocompleteInstance = new google.maps.places.Autocomplete(input, {
-            types: ['(cities)'],
-            componentRestrictions: { country: 'us' }
-          });
-          
-          autocompleteInstance.addListener('place_changed', () => {
-            const place = autocompleteInstance.getPlace();
-            if (place.formatted_address) {
-              const address = place.formatted_address;
-              setLocation(address);
-              fetchPrayerTimes(address);
-              // Update input value to ensure it shows the selected address
-              if (input) {
-                input.value = address;
-              }
-            }
-          });
-          
-          setAutocomplete(autocompleteInstance);
-        } catch (error) {
-          console.log('Google Places autocomplete not available, using fallback');
-        }
-      }
-    }
-  };
+
 
 
 
@@ -124,7 +93,7 @@ const PrayerTimes: React.FC = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `https://api.aladhan.com/v1/timingsByCity?city=${city}&country=&method=2`
+        `/api/prayer/times/city?city=${encodeURIComponent(city)}&method=2`
       );
       const data = await response.json();
       setPrayerData(data.data);
@@ -145,42 +114,34 @@ const PrayerTimes: React.FC = () => {
     if (navigator.geolocation) {
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords;
           
-          // Try to get formatted address using Google Maps if available
-          if (window.google && window.google.maps) {
-            try {
-              const geocoder = new google.maps.Geocoder();
-              geocoder.geocode(
-                { location: { lat: latitude, lng: longitude } },
-                (results, status) => {
-                  if (status === 'OK' && results && results[0]) {
-                    const components = results[0].address_components;
-                    const city = components.find(c => c.types.includes('locality'))?.long_name ||
-                                components.find(c => c.types.includes('sublocality'))?.long_name ||
-                                components.find(c => c.types.includes('administrative_area_level_2'))?.long_name;
-                    const state = components.find(c => c.types.includes('administrative_area_level_1'))?.short_name;
-                    const zipcode = components.find(c => c.types.includes('postal_code'))?.long_name;
-                    const country = components.find(c => c.types.includes('country'))?.long_name;
-                    
-                    const locationParts = [city, state, zipcode, country].filter(Boolean);
-                    const address = locationParts.join(', ');
-                    setLocation(address);
-                  } else {
-                    setLocation('Current Location');
-                  }
-                  fetchPrayerTimesByCoords(latitude, longitude);
-                }
-              );
-            } catch (error) {
-              setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-              fetchPrayerTimesByCoords(latitude, longitude);
+          // Try to get formatted address using backend geocoding service
+          try {
+            const response = await fetch(`/api/maps/geocode?lat=${latitude}&lng=${longitude}`);
+            const data = await response.json();
+            
+            if (data.status === 'OK' && data.results && data.results[0]) {
+              const components = data.results[0].address_components;
+              const city = components.find((c: any) => c.types.includes('locality'))?.long_name ||
+                          components.find((c: any) => c.types.includes('sublocality'))?.long_name ||
+                          components.find((c: any) => c.types.includes('administrative_area_level_2'))?.long_name;
+              const state = components.find((c: any) => c.types.includes('administrative_area_level_1'))?.short_name;
+              const zipcode = components.find((c: any) => c.types.includes('postal_code'))?.long_name;
+              const country = components.find((c: any) => c.types.includes('country'))?.long_name;
+              
+              const locationParts = [city, state, zipcode, country].filter(Boolean);
+              const address = locationParts.join(', ');
+              setLocation(address);
+            } else {
+              setLocation('Current Location');
             }
-          } else {
+          } catch (error) {
             setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-            fetchPrayerTimesByCoords(latitude, longitude);
           }
+          
+          fetchPrayerTimesByCoords(latitude, longitude);
           
           setLocationPermission('granted');
         },
@@ -202,7 +163,7 @@ const PrayerTimes: React.FC = () => {
   const fetchPrayerTimesByCoords = async (latitude: number, longitude: number) => {
     try {
       const response = await fetch(
-        `https://api.aladhan.com/v1/timings?latitude=${latitude}&longitude=${longitude}&method=2`
+        `/api/prayer/times?latitude=${latitude}&longitude=${longitude}&method=2`
       );
       const data = await response.json();
       setPrayerData(data.data);

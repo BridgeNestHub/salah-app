@@ -1,18 +1,75 @@
 import express from 'express';
+import axios from 'axios';
 
 const router = express.Router();
 
-// Proxy Google Places API to hide API key
-router.post('/places/search', async (req, res) => {
+// Get places autocomplete suggestions
+router.get('/places/autocomplete', async (req, res) => {
   try {
-    const { lat, lng, radius = 8047 } = req.body;
+    const { input, types = 'geocode' } = req.query;
     
-    const response = await fetch(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=mosque&key=${process.env.GOOGLE_PLACES_API_KEY}`);
-    
-    const data = await response.json();
-    res.json(data);
+    if (!input) {
+      return res.status(400).json({ error: 'Input is required' });
+    }
+
+    const response = await axios.get('https://maps.googleapis.com/maps/api/place/autocomplete/json', {
+      params: {
+        input,
+        types,
+        key: process.env.GOOGLE_MAPS_API_KEY
+      }
+    });
+
+    res.json(response.data);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to search places' });
+    console.error('Places autocomplete API error:', error);
+    res.status(500).json({ error: 'Failed to fetch place suggestions' });
+  }
+});
+
+// Get place details
+router.get('/places/details', async (req, res) => {
+  try {
+    const { place_id } = req.query;
+    
+    if (!place_id) {
+      return res.status(400).json({ error: 'Place ID is required' });
+    }
+
+    const response = await axios.get('https://maps.googleapis.com/maps/api/place/details/json', {
+      params: {
+        place_id,
+        key: process.env.GOOGLE_MAPS_API_KEY
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Place details API error:', error);
+    res.status(500).json({ error: 'Failed to fetch place details' });
+  }
+});
+
+// Geocode coordinates to address
+router.get('/geocode', async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+    
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'Latitude and longitude are required' });
+    }
+
+    const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
+      params: {
+        latlng: `${lat},${lng}`,
+        key: process.env.GOOGLE_MAPS_API_KEY
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Geocoding API error:', error);
+    res.status(500).json({ error: 'Failed to geocode location' });
   }
 });
 

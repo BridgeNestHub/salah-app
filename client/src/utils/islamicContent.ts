@@ -241,7 +241,8 @@ export const getHijriDate = (): { day: number; month: string; year: number; arab
 export const getHijriDateFromAPI = async (): Promise<{ day: number; month: string; year: number; arabic: string }> => {
   try {
     const today = new Date();
-    const response = await fetch(`https://api.aladhan.com/v1/gToH/${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`);
+    const dateString = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
+    const response = await fetch(`/api/prayer/hijri-date?date=${dateString}`);
     const data = await response.json();
     
     if (data.code === 200) {

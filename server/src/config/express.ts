@@ -13,6 +13,8 @@ import staffEventsRoutes from '../routes/staff/events';
 import publicContactRoutes from '../routes/public/contact';
 import staffContactRoutes from '../routes/staff/contact';
 import publicMapsRoutes from '../routes/public/maps';
+import publicPrayerRoutes from '../routes/public/prayer';
+import publicLocationRoutes from '../routes/public/location';
 
 export const configureExpress = (app: express.Application) => {
   // Security middleware
@@ -46,6 +48,8 @@ export const configureExpress = (app: express.Application) => {
   app.use('/api/contact', publicContactRoutes);
   app.use('/api/staff/contact', staffContactRoutes);
   app.use('/api/maps', publicMapsRoutes);
+  app.use('/api/prayer', publicPrayerRoutes);
+  app.use('/api/location', publicLocationRoutes);
 
   // Serve React build files in production
   if (process.env.NODE_ENV === 'production') {
