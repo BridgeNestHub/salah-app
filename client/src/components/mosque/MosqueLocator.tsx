@@ -111,8 +111,10 @@ const MosqueLocator: React.FC = () => {
     getCurrentLocation();
   }, []);
 
+  // Corrected useEffect to trigger mosque search once location and maps are ready
   useEffect(() => {
-    if (userLocation && mapsLoaded && mosques.length === 0 && !error) {
+    if (userLocation && mapsLoaded) {
+      setLoading(true);
       findNearbyMosques(userLocation.lat, userLocation.lng);
     }
   }, [userLocation, mapsLoaded]);
