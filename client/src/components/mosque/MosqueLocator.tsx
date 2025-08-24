@@ -126,6 +126,33 @@ const MosqueLocator: React.FC = () => {
     }
   }, [userLocation, mapsLoaded]);
 
+  // Fallback: Check if Google Maps is available after location is set
+  useEffect(() => {
+    if (userLocation && !mapsLoaded) {
+      const checkGoogleMaps = () => {
+        if (window.google && window.google.maps) {
+          console.log('Google Maps detected, setting mapsLoaded to true');
+          setMapsLoaded(true);
+        }
+      };
+      
+      // Check immediately
+      checkGoogleMaps();
+      
+      // Check every 500ms for up to 10 seconds
+      const interval = setInterval(checkGoogleMaps, 500);
+      const timeout = setTimeout(() => {
+        clearInterval(interval);
+        console.log('Timeout waiting for Google Maps API');
+      }, 10000);
+      
+      return () => {
+        clearInterval(interval);
+        clearTimeout(timeout);
+      };
+    }
+  }, [userLocation, mapsLoaded]);
+
   const getCurrentLocation = () => {
     setLoading(true);
     setError(null);
@@ -273,7 +300,10 @@ const MosqueLocator: React.FC = () => {
         <Wrapper 
           apiKey={GOOGLE_MAPS_API_KEY} 
           libraries={['places']}
-          callback={() => setMapsLoaded(true)}
+          callback={() => {
+            console.log('Google Maps API loaded via Wrapper');
+            setMapsLoaded(true);
+          }}
         >
           <GoogleMapComponent
             center={userLocation}
