@@ -14,9 +14,10 @@ This project follows a modern full-stack architecture with:
 ## 📁 Project Structure
 
 ```
-islamic-prayer-web/
+prayer-app-web/
 ├── client/                    # React frontend application
 ├── server/                    # Node.js backend API
+├── iOS_Prayer_App/            # iOS SwiftUI application
 ├── shared/                    # Shared types and constants
 ├── docker-compose.yml         # Development environment
 ├── package.json              # Root package.json for scripts
@@ -27,46 +28,86 @@ islamic-prayer-web/
 ```
 client/
 ├── public/                   # Static assets
+│   ├── athan.mp3            # Prayer call audio
+│   ├── favicon.ico          # App icon
+│   └── manifest.json        # PWA manifest
 ├── src/
 │   ├── components/          # Reusable UI components
 │   │   ├── common/          # Shared components (Header, Footer, etc.)
+│   │   ├── events/          # Islamic events components
+│   │   ├── hadith/          # Hadith reader components
+│   │   ├── mosque/          # Mosque locator components
 │   │   ├── prayer/          # Prayer times components
 │   │   ├── qibla/           # Qibla compass components
-│   │   ├── mosque/          # Mosque locator components
-│   │   ├── quran/           # Quran verse components
-│   │   └── hadith/          # Hadith components
+│   │   └── quran/           # Quran reader components
 │   ├── pages/               # Page components
 │   │   ├── public/          # Public pages (Home, About, Contact)
 │   │   ├── admin/           # Admin dashboard pages
 │   │   └── staff/           # Staff interface pages
+│   ├── contexts/            # React contexts (Auth, Theme, etc.)
 │   ├── hooks/               # Custom React hooks
 │   ├── services/            # API service calls
-│   ├── utils/               # Utility functions
-│   ├── contexts/            # React contexts (Auth, Theme, etc.)
+│   ├── styles/              # CSS files
 │   ├── types/               # TypeScript type definitions
-│   └── styles/              # CSS/SCSS files
-└── package.json
+│   ├── utils/               # Utility functions
+│   ├── App.tsx              # Main App component
+│   └── index.tsx            # App entry point
+├── .env                     # Environment variables
+├── package.json             # Dependencies and scripts
+├── tailwind.config.js       # Tailwind CSS configuration
+└── tsconfig.json            # TypeScript configuration
 ```
 
 ### Server Structure (Node.js Backend)
 ```
 server/
 ├── src/
+│   ├── config/              # Configuration files
 │   ├── controllers/         # Route controllers
-│   │   ├── public/          # Public API controllers
 │   │   ├── admin/           # Admin API controllers
+│   │   ├── public/          # Public API controllers
 │   │   └── staff/           # Staff API controllers
+│   ├── middleware/          # Express middleware (auth, validation)
 │   ├── models/              # MongoDB models (User, Mosque, etc.)
 │   ├── routes/              # API route definitions
-│   │   ├── public/          # Public routes
 │   │   ├── admin/           # Admin routes
+│   │   ├── public/          # Public routes
 │   │   └── staff/           # Staff routes
-│   ├── middleware/          # Express middleware (auth, validation)
 │   ├── services/            # Business logic services
+│   ├── types/               # TypeScript types
 │   ├── utils/               # Utility functions
-│   ├── config/              # Configuration files
-│   └── types/               # TypeScript types
-└── package.json
+│   └── index.ts             # Server entry point
+├── package.json             # Dependencies and scripts
+└── tsconfig.json            # TypeScript configuration
+```
+
+### iOS App Structure (SwiftUI)
+```
+iOS_Prayer_App/
+├── App/                     # Main app structure
+│   ├── Navigation/          # Navigation components
+│   ├── ContentView.swift    # Main content view
+│   └── iOS_Prayer_AppApp.swift # App entry point
+├── Core/                    # Core functionality
+│   ├── Data/                # Data persistence
+│   ├── Location/            # Location services
+│   ├── Network/             # API services
+│   └── Notifications/       # Push notifications
+├── Features/                # Feature modules
+│   ├── Events/              # Islamic events
+│   ├── Hadith/              # Hadith reader
+│   ├── Mosque/              # Mosque locator
+│   ├── Prayer/              # Prayer times
+│   ├── Qibla/               # Qibla compass
+│   ├── Quran/               # Quran reader
+│   └── Settings/            # App settings
+├── Resources/               # App resources
+│   ├── PrayerApp.xcdatamodeld/ # Core Data model
+│   └── Info.plist           # App configuration
+└── Shared/                  # Shared components
+    ├── Models/              # Data models
+    ├── Utils/               # Utility functions
+    └── Views/               # Reusable views
 ```
 
 ## 🚀 Features

@@ -27,6 +27,7 @@ export const configureExpress = (app: express.Application) => {
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "https:"],
+        mediaSrc: ["'self'", "https://www.everyayah.com", "blob:", "data:"],
       },
     },
   }));
