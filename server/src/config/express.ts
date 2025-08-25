@@ -53,18 +53,38 @@ export const configureExpress = (app: express.Application) => {
   // Logging
   app.use(morgan('combined'));
 
+  // Debug logging for routes
+  console.log('🔧 Registering API routes...');
+  console.log('🗺️  Maps routes imported:', !!publicMapsRoutes);
+  console.log('🗺️  Maps routes type:', typeof publicMapsRoutes);
+
   // API Routes
   app.use('/api/public/events', publicEventsRoutes);
   app.use('/api/admin/events', adminEventsRoutes);
   app.use('/api/staff/events', staffEventsRoutes);
   app.use('/api/contact', publicContactRoutes);
   app.use('/api/staff/contact', staffContactRoutes);
+  
+  // Maps routes with extra logging
+  console.log('🗺️  Registering /api/maps routes...');
   app.use('/api/maps', publicMapsRoutes);
+  console.log('🗺️  Maps routes registered successfully');
+  
   app.use('/api/prayer', publicPrayerRoutes);
   app.use('/api/location', publicLocationRoutes);
+
+  // Test route to verify maps are working
+  app.get('/api/maps-test', (req, res) => {
+    res.json({ 
+      message: 'Maps test route working',
+      timestamp: new Date().toISOString()
+    });
+  });
 
   // Serve React build files in production
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../../../client/build')));
   }
+
+  console.log('✅ All routes configured successfully');
 };
