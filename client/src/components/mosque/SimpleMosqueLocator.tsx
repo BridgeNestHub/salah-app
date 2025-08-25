@@ -78,35 +78,11 @@ const SimpleMosqueLocator: React.FC = () => {
 
   const findNearbyMosques = async (lat: number, lng: number) => {
     setLocationStatus('Searching for nearby mosques...');
-    
-    const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
-    
-    if (!apiKey) {
-      // Use sample data if no API key
-      const sampleMosques: Mosque[] = [
-        { id: '1', name: 'Islamic Center of Greater Cincinnati', address: '3668 Clifton Ave, Cincinnati, OH 45220', lat: 39.1312, lng: -84.5120, rating: 4.5 },
-        { id: '2', name: 'Masjid Al-Noor', address: '123 Main St, Cincinnati, OH 45202', lat: 39.1031, lng: -84.5120, rating: 4.2 },
-        { id: '3', name: 'Cincinnati Islamic Center', address: '456 Oak St, Cincinnati, OH 45219', lat: 39.1200, lng: -84.5000, rating: 4.7 },
-        { id: '4', name: 'West Chester Islamic Center', address: '789 Union Centre Blvd, West Chester, OH 45069', lat: 39.3292, lng: -84.4008, rating: 4.3 },
-      ];
-      
-      const mosquesWithDistance = sampleMosques.map(mosque => ({
-        ...mosque,
-        distance: calculateDistance(lat, lng, mosque.lat, mosque.lng)
-      }));
-      
-      mosquesWithDistance.sort((a, b) => a.distance - b.distance);
-      setMosques(mosquesWithDistance);
-      setLocationStatus(`Found ${mosquesWithDistance.length} mosques (sample data)`);
-      setLoading(false);
-      return;
-    }
 
     try {
-      // Use Google Places API via fetch
+      // Use backend API to avoid CORS issues
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/nearbysearch/json?` +
-        `location=${lat},${lng}&radius=8047&keyword=mosque&type=place_of_worship&key=${apiKey}`,
+        `/api/maps/mosques/nearby?lat=${lat}&lng=${lng}&radius=8047`,
         {
           method: 'GET',
           headers: {
@@ -136,12 +112,13 @@ const SimpleMosqueLocator: React.FC = () => {
         setMosques(mosquesWithDistance);
         setLocationStatus(`Found ${mosquesWithDistance.length} mosques`);
       } else {
-        throw new Error(`Places API error: ${data.status}`);
+        console.warn('No mosques found or API error:', data.status);
+        throw new Error(`Places API error: ${data.status || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error finding mosques:', error);
       setError(`Failed to load nearby mosques: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setLocationStatus('Search failed');
+      setLocationStatus('Search failed - using sample data');
       
       // Fallback to sample data
       const sampleMosques: Mosque[] = [

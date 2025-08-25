@@ -22,7 +22,7 @@ export const configureExpress = (app: express.Application) => {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        connectSrc: ["'self'", "https://api.aladhan.com", "https://api.alquran.cloud"],
+        connectSrc: ["'self'", "https://api.aladhan.com", "https://api.alquran.cloud", "https://maps.googleapis.com", "https://places.googleapis.com"],
         scriptSrc: ["'self'", "'unsafe-inline'", "https://maps.googleapis.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],

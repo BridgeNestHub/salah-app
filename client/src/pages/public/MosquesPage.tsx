@@ -1,8 +1,5 @@
 import React from 'react';
-import MosqueLocator from '../../components/mosque/MosqueLocator';
-import MosqueDebug from '../../components/mosque/MosqueDebug';
-import MosqueTest from '../../components/mosque/MosqueTest';
-import SimpleMosqueLocator from '../../components/mosque/SimpleMosqueLocator';
+import WorkingMosqueLocator from '../../components/mosque/WorkingMosqueLocator';
 
 const MosquesPage: React.FC = () => {
   return (
@@ -14,12 +11,7 @@ const MosquesPage: React.FC = () => {
 
       <main>
         <section className="section">
-          <MosqueTest />
-          <MosqueDebug />
-          <SimpleMosqueLocator />
-          <hr style={{ margin: '40px 0', border: '1px solid #ddd' }} />
-          <h3>Original MosqueLocator (with Google Maps)</h3>
-          <MosqueLocator />
+          <WorkingMosqueLocator />
         </section>
 
         <section className="section">
