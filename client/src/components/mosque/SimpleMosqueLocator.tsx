@@ -132,7 +132,7 @@ const SimpleMosqueLocator: React.FC = () => {
           distance: calculateDistance(lat, lng, place.geometry.location.lat, place.geometry.location.lng)
         }));
 
-        mosquesWithDistance.sort((a, b) => a.distance - b.distance);
+        mosquesWithDistance.sort((a: any, b: any) => (a.distance || 0) - (b.distance || 0));
         setMosques(mosquesWithDistance);
         setLocationStatus(`Found ${mosquesWithDistance.length} mosques`);
       } else {

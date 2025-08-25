@@ -30,7 +30,7 @@ const MosqueDebug: React.FC = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setDebugInfo(prev => ({
+          setDebugInfo((prev: any) => ({
             ...prev,
             geolocationTest: 'Success',
             latitude: position.coords.latitude,
@@ -39,7 +39,7 @@ const MosqueDebug: React.FC = () => {
           }));
         },
         (error) => {
-          setDebugInfo(prev => ({
+          setDebugInfo((prev: any) => ({
             ...prev,
             geolocationTest: 'Failed',
             geolocationError: error.message

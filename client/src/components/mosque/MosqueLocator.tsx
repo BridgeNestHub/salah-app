@@ -269,11 +269,11 @@ const MosqueLocator: React.FC = () => {
         <Wrapper 
           apiKey={GOOGLE_MAPS_API_KEY} 
           libraries={['places']}
-          callback={(status) => {
-            if (status === 'success') {
+          callback={() => {
+            if (window.google?.maps) {
               setMapsLoaded(true);
             } else {
-              console.error('Google Maps failed to load:', status);
+              console.error('Google Maps failed to load');
               setError('Google Maps failed to load. Using fallback mode.');
               setUseFallback(true);
             }

@@ -110,7 +110,7 @@ const MosqueTest: React.FC = () => {
 
   const testPlacesAPI = async () => {
     if (!window.google?.maps?.places) {
-      setTestResults(prev => ({
+      setTestResults((prev: any) => ({
         ...prev,
         placesTest: { status: 'google_maps_not_loaded' }
       }));
@@ -127,7 +127,7 @@ const MosqueTest: React.FC = () => {
       };
 
       service.nearbySearch(request, (results, status) => {
-        setTestResults(prev => ({
+        setTestResults((prev: any) => ({
           ...prev,
           placesTest: {
             status: status,
@@ -137,7 +137,7 @@ const MosqueTest: React.FC = () => {
         }));
       });
     } catch (error) {
-      setTestResults(prev => ({
+      setTestResults((prev: any) => ({
         ...prev,
         placesTest: { status: 'error', message: (error as Error).message }
       }));
