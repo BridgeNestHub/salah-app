@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Wrapper } from '@googlemaps/react-wrapper';
 import { Mosque } from '../../types/google-maps';
+import FallbackMosqueLocator from './FallbackMosqueLocator';
 
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
 
@@ -111,6 +112,7 @@ const MosqueLocator: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mapsLoaded, setMapsLoaded] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
 
   useEffect(() => {
     getCurrentLocation();
@@ -157,48 +159,50 @@ const MosqueLocator: React.FC = () => {
         throw new Error('Google Maps API not loaded');
       }
 
-      const { Place } = await google.maps.importLibrary('places') as google.maps.PlacesLibrary;
+      const service = new google.maps.places.PlacesService(document.createElement('div'));
       
       const request = {
-        textQuery: 'mosque',
-        fields: ['displayName', 'location', 'formattedAddress', 'rating', 'regularOpeningHours', 'photos', 'id'],
-        locationBias: {
-          center: { lat, lng },
-          radius: 8047,
-        },
-        maxResultCount: 20,
+        location: new google.maps.LatLng(lat, lng),
+        radius: 8047, // 5 miles in meters
+        keyword: 'mosque',
+        type: 'place_of_worship'
       };
 
-      const { places } = await Place.searchByText(request);
-      
-      if (places && places.length > 0) {
-        const mosqueData: Mosque[] = places.map((place) => {
-          const mosque: Mosque = {
-            place_id: place.id!,
-            name: place.displayName || 'Mosque',
-            formatted_address: place.formattedAddress || 'Address not available',
-            geometry: {
-              location: {
-                lat: place.location!.lat(),
-                lng: place.location!.lng(),
+      service.nearbySearch(request, (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          const mosqueData: Mosque[] = results.map((place) => {
+            const mosque: Mosque = {
+              place_id: place.place_id!,
+              name: place.name || 'Mosque',
+              formatted_address: place.vicinity || 'Address not available',
+              geometry: {
+                location: {
+                  lat: place.geometry!.location!.lat(),
+                  lng: place.geometry!.location!.lng(),
+                },
               },
-            },
-            rating: place.rating || undefined,
-            isOpen: undefined,
-            photos: place.photos?.slice(0, 1).map(photo => photo.getURI({ maxWidth: 400, maxHeight: 300 })),
-            distance: calculateDistance(lat, lng, place.location!.lat(), place.location!.lng()),
-          };
-          return mosque;
-        });
+              rating: place.rating || undefined,
+              isOpen: place.opening_hours?.open_now,
+              photos: place.photos?.slice(0, 1).map(photo => photo.getUrl({ maxWidth: 400, maxHeight: 300 })),
+              distance: calculateDistance(lat, lng, place.geometry!.location!.lat(), place.geometry!.location!.lng()),
+            };
+            return mosque;
+          });
 
-        setMosques(mosqueData.sort((a, b) => (a.distance || 0) - (b.distance || 0)));
-      } else {
-        setMosques([]);
-      }
+          setMosques(mosqueData.sort((a, b) => (a.distance || 0) - (b.distance || 0)));
+        } else {
+          console.error('Places service failed:', status);
+          if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+            setMosques([]);
+          } else {
+            setError(`Failed to find mosques: ${status}`);
+          }
+        }
+        setLoading(false);
+      });
     } catch (error) {
       console.error('Error finding mosques:', error);
       setError(`Failed to load nearby mosques: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
       setLoading(false);
     }
   };
@@ -224,11 +228,16 @@ const MosqueLocator: React.FC = () => {
     window.open(url, '_blank');
   };
 
-  if (!GOOGLE_MAPS_API_KEY) {
+  if (!GOOGLE_MAPS_API_KEY || useFallback) {
     return (
-      <div className="error">
-        <h3>❌ Configuration Error</h3>
-        <p>Google Maps API key is required. Please add REACT_APP_GOOGLE_MAPS_API_KEY to your .env file.</p>
+      <div>
+        {!GOOGLE_MAPS_API_KEY && (
+          <div className="error" style={{ marginBottom: '20px' }}>
+            <h3>❌ Configuration Error</h3>
+            <p>Google Maps API key is missing. Using fallback mode.</p>
+          </div>
+        )}
+        <FallbackMosqueLocator />
       </div>
     );
   }
@@ -246,7 +255,10 @@ const MosqueLocator: React.FC = () => {
       <div className="error">
         <h3>❌ Error</h3>
         <p>{error}</p>
-        <button onClick={getCurrentLocation} className="btn-primary">Try Again</button>
+        <div style={{ marginTop: '15px' }}>
+          <button onClick={getCurrentLocation} className="btn-primary" style={{ marginRight: '10px' }}>Try Again</button>
+          <button onClick={() => setUseFallback(true)} className="btn-primary">Use Fallback Mode</button>
+        </div>
       </div>
     );
   }
@@ -257,7 +269,15 @@ const MosqueLocator: React.FC = () => {
         <Wrapper 
           apiKey={GOOGLE_MAPS_API_KEY} 
           libraries={['places']}
-          callback={() => setMapsLoaded(true)}
+          callback={(status) => {
+            if (status === 'success') {
+              setMapsLoaded(true);
+            } else {
+              console.error('Google Maps failed to load:', status);
+              setError('Google Maps failed to load. Using fallback mode.');
+              setUseFallback(true);
+            }
+          }}
         >
           <GoogleMapComponent
             center={userLocation}

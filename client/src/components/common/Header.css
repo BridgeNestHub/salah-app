@@ -142,14 +142,16 @@
   .nav {
     position: absolute;
     top: 100%;
-    left: 0;
     right: 0;
     background: linear-gradient(135deg, #2c5530 0%, #1a3d1f 100%);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-radius: 0 0 0 8px;
     transform: translateY(-100%);
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
+    min-width: 200px;
+    width: auto;
   }
 
   .nav-open {
@@ -160,14 +162,16 @@
 
   .nav-list {
     flex-direction: column;
-    padding: 1rem 0;
+    padding: 0.5rem 0;
     gap: 0;
+    white-space: nowrap;
   }
 
   .nav-link {
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1.5rem;
     border-radius: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: left;
   }
 
   .nav-link:hover {

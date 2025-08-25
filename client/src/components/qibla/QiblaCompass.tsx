@@ -107,7 +107,7 @@ const QiblaCompass: React.FC = () => {
     bearing = (bearing + 360) % 360; // Normalize to 0-360
 
     // Calculate distance using Haversine formula
-    const R = 6371; // Earth's radius in km
+    const R = 3959; // Earth's radius in miles
     const dLat = lat2 - lat1;
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
               Math.cos(lat1) * Math.cos(lat2) *
@@ -291,9 +291,9 @@ const QiblaCompass: React.FC = () => {
 
   const formatDistance = (dist: number): string => {
     if (dist < 1000) {
-      return `${Math.round(dist)} km`;
+      return `${Math.round(dist)} miles`;
     } else {
-      return `${(dist / 1000).toFixed(1)}K km`;
+      return `${(dist / 1000).toFixed(1)}K miles`;
     }
   };
 
@@ -462,7 +462,7 @@ const QiblaCompass: React.FC = () => {
             </div>
             {accuracy > 0 && (
               <div className="accuracy-text">
-                Accuracy: ±{Math.round(accuracy)}m
+                Accuracy: ±{Math.round(accuracy * 3.28084)}ft
               </div>
             )}
           </div>
