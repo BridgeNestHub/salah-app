@@ -12,6 +12,7 @@ class AthanNotificationService {
     this.requestNotificationPermission();
     this.setupPageInteractionListeners();
     this.setupUserInteractionDetection();
+    this.enableAudioOnLoad();
   }
 
   private initializeAudio() {
@@ -49,7 +50,7 @@ class AthanNotificationService {
   }
 
   private setupUserInteractionDetection() {
-    const events = ['click', 'touchstart', 'keydown'];
+    const events = ['click', 'touchstart', 'keydown', 'scroll'];
     const handleInteraction = () => {
       if (!this.userInteracted) {
         this.userInteracted = true;
@@ -63,6 +64,44 @@ class AthanNotificationService {
     events.forEach(event => {
       document.addEventListener(event, handleInteraction, { once: true });
     });
+  }
+
+  private enableAudioOnLoad() {
+    // Try to enable audio immediately when page loads
+    if (document.readyState === 'complete') {
+      this.tryEnableAudio();
+    } else {
+      window.addEventListener('load', () => this.tryEnableAudio());
+    }
+  }
+
+  private async tryEnableAudio() {
+    try {
+      // Attempt to initialize audio context immediately
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContext) {
+        const audioContext = new AudioContext();
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
+      }
+      
+      // Try to preload and prepare audio
+      if (this.audio) {
+        this.audio.load();
+        // Attempt silent play to unlock audio (will fail but unlocks for later)
+        this.audio.muted = true;
+        await this.audio.play();
+        this.audio.pause();
+        this.audio.muted = false;
+        this.audio.currentTime = 0;
+        this.audioInitialized = true;
+        this.userInteracted = true;
+      }
+    } catch (error) {
+      // Expected to fail on mobile, but this attempt helps unlock audio
+      console.log('Initial audio unlock attempt (expected on mobile):', error);
+    }
   }
 
   private async initializeAudioContext() {
@@ -220,6 +259,17 @@ class AthanNotificationService {
     // Make service available globally for button click
     (window as any).athanService = this;
     
+    // Add click handler for test audio button
+    const testButton = notification.querySelector('button[onclick*="testAthansound"]');
+    if (testButton) {
+      testButton.addEventListener('click', async () => {
+        const success = await this.testAthansound();
+        if (success) {
+          notification.remove();
+        }
+      });
+    }
+    
     // Auto-remove after 60 seconds (longer for audio issues)
     setTimeout(() => {
       if (notification.parentElement) {
@@ -281,7 +331,7 @@ class AthanNotificationService {
     }
   }
 
-  public async testAthansound() {
+  public async testAthansound(): Promise<boolean> {
     this.userInteracted = true;
     
     if (this.audio) {
@@ -291,7 +341,7 @@ class AthanNotificationService {
         await this.audio.play();
         this.audioInitialized = true;
         console.log('Test sound played successfully');
-        alert('✅ Athan sound test successful! Notifications will work.');
+        return true;
       } catch (error) {
         console.error('Failed to play Athan sound:', error);
         
@@ -301,12 +351,18 @@ class AthanNotificationService {
           testAudio.volume = this.audio.volume;
           await testAudio.play();
           this.audioInitialized = true;
-          alert('✅ Athan sound test successful! Notifications will work.');
+          return true;
         } catch (fallbackError) {
-          alert('❌ Audio blocked by browser. Please:\n1. Enable sound in browser settings\n2. Make sure device is not on silent mode\n3. Try refreshing the page');
+          console.error('Fallback audio also failed:', fallbackError);
+          return false;
         }
       }
     }
+    return false;
+  }
+
+  public get isAudioEnabled(): boolean {
+    return this.audioInitialized && this.userInteracted;
   }
 }
 

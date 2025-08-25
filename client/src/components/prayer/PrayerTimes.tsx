@@ -34,6 +34,7 @@ const PrayerTimes: React.FC = () => {
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
   const [volume, setVolume] = useState(0.8);
+  const [audioEnabled, setAudioEnabled] = useState(false);
 
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
@@ -48,7 +49,31 @@ const PrayerTimes: React.FC = () => {
 
   useEffect(() => {
     initializeLocation();
+    checkAudioStatus();
+    
+    // Check audio status periodically
+    const interval = setInterval(checkAudioStatus, 2000);
+    return () => clearInterval(interval);
   }, []);
+
+  const checkAudioStatus = () => {
+    // Check if audio is enabled
+    const isEnabled = athanService.isAudioEnabled;
+    setAudioEnabled(isEnabled);
+  };
+
+  const enableAudio = async () => {
+    try {
+      const success = await athanService.testAthansound();
+      setAudioEnabled(success);
+      if (!success) {
+        alert('❌ Audio blocked by browser. Please:\n1. Enable sound in browser settings\n2. Make sure device is not on silent mode\n3. Try refreshing the page');
+      }
+    } catch (error) {
+      console.error('Failed to enable audio:', error);
+      setAudioEnabled(false);
+    }
+  };
 
   const initializeLocation = async () => {
     // Check if user previously granted location permission
@@ -102,6 +127,9 @@ const PrayerTimes: React.FC = () => {
       if (data.data?.timings) {
         athanService.scheduleAthanNotifications(data.data.timings);
       }
+      
+      // Update audio status after scheduling
+      setTimeout(checkAudioStatus, 100);
     } catch (error) {
       console.error('Error fetching prayer times:', error);
     } finally {
@@ -171,6 +199,9 @@ const PrayerTimes: React.FC = () => {
       if (data.data?.timings) {
         athanService.scheduleAthanNotifications(data.data.timings);
       }
+      
+      // Update audio status after scheduling
+      setTimeout(checkAudioStatus, 100);
       
       // Don't update location if it's already set by geocoder
       if (!location || location.includes(',')) {
@@ -263,12 +294,46 @@ const PrayerTimes: React.FC = () => {
             Location access denied. Please type your city or enable location in browser settings.
           </p>
         )}
+        {audioEnabled && (
+          <p className="audio-status" style={{ color: '#28a745', fontSize: '14px', margin: '5px 0' }}>
+            ✅ Prayer call notifications enabled
+          </p>
+        )}
       </div>
 
       <div className="date-display">
         <div>{prayerData.date.hijri.day} {prayerData.date.hijri.month.en} {prayerData.date.hijri.year} AH</div>
         <div>{prayerData.date.gregorian.weekday.en}, {prayerData.date.gregorian.day} {prayerData.date.gregorian.month.en} {prayerData.date.gregorian.year}</div>
       </div>
+
+      {!audioEnabled && (
+        <div className="audio-enable-banner" style={{
+          background: '#fff3cd',
+          border: '1px solid #ffeaa7',
+          borderRadius: '8px',
+          padding: '15px',
+          margin: '15px 0',
+          textAlign: 'center'
+        }}>
+          <p style={{ margin: '0 0 10px 0', color: '#856404' }}>
+            🔔 Enable prayer call notifications
+          </p>
+          <button 
+            onClick={enableAudio}
+            style={{
+              background: '#28a745',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
+          >
+            🔊 Enable Sound
+          </button>
+        </div>
+      )}
 
 
 
