@@ -72,8 +72,10 @@ const WorkingMosqueLocator: React.FC = () => {
     try {
       setLoading(true);
       
+      // Use relative path for production, full URL for development
+      const baseUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '';
       const response = await fetch(
-        `http://localhost:8000/api/maps/mosques/nearby?lat=${lat}&lng=${lng}&radius=${searchRadius}`
+        `${baseUrl}/api/maps/mosques/nearby?lat=${lat}&lng=${lng}&radius=${searchRadius}`
       );
       
       if (!response.ok) {
@@ -128,7 +130,9 @@ const WorkingMosqueLocator: React.FC = () => {
 
   const getLocationName = async (lat: number, lng: number) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/maps/geocode?lat=${lat}&lng=${lng}`);
+      // Use relative path for production, full URL for development
+      const baseUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '';
+      const response = await fetch(`${baseUrl}/api/maps/geocode?lat=${lat}&lng=${lng}`);
       const data = await response.json();
       
       if (data.status === 'OK' && data.results?.[0]) {

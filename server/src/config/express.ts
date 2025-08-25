@@ -18,11 +18,21 @@ import publicLocationRoutes from '../routes/public/location';
 
 export const configureExpress = (app: express.Application) => {
   // Security middleware with custom CSP
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        connectSrc: ["'self'", "https://api.aladhan.com", "https://api.alquran.cloud", "https://maps.googleapis.com", "https://places.googleapis.com"],
+        connectSrc: [
+          "'self'", 
+          "https://api.aladhan.com", 
+          "https://api.alquran.cloud", 
+          "https://maps.googleapis.com", 
+          "https://places.googleapis.com",
+          // Add localhost for development
+          ...(isDevelopment ? ["http://localhost:3000", "http://localhost:8000"] : [])
+        ],
         scriptSrc: ["'self'", "'unsafe-inline'", "https://maps.googleapis.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
@@ -31,6 +41,7 @@ export const configureExpress = (app: express.Application) => {
       },
     },
   }));
+  
   app.use(cors({
     origin: ['http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
