@@ -6,8 +6,8 @@ const router = express.Router();
 // Debug endpoint to check API key configuration
 router.get('/debug', async (req, res) => {
   try {
-    const hasApiKey = !!process.env.GOOGLE_MAPS_API_KEY;
-    const keyPrefix = process.env.GOOGLE_MAPS_API_KEY?.substring(0, 20) + '...';
+    const hasApiKey = !!process.env.GOOGLE_MAPS_BACKEND_KEY;
+    const keyPrefix = process.env.GOOGLE_MAPS_BACKEND_KEY?.substring(0, 20) + '...';
     
     res.json({ 
       hasApiKey,
@@ -29,8 +29,8 @@ router.get('/places/autocomplete', async (req, res) => {
       return res.status(400).json({ error: 'Input is required' });
     }
 
-    if (!process.env.GOOGLE_MAPS_API_KEY) {
-      console.error('GOOGLE_MAPS_API_KEY is not set');
+    if (!process.env.GOOGLE_MAPS_BACKEND_KEY) {
+      console.error('GOOGLE_MAPS_BACKEND_KEY is not set');
       return res.status(500).json({ error: 'Google Maps API key not configured' });
     }
 
@@ -40,7 +40,7 @@ router.get('/places/autocomplete', async (req, res) => {
       params: {
         input,
         types,
-        key: process.env.GOOGLE_MAPS_API_KEY
+        key: process.env.GOOGLE_MAPS_BACKEND_KEY
       }
     });
 
@@ -65,8 +65,8 @@ router.get('/places/details', async (req, res) => {
       return res.status(400).json({ error: 'Place ID is required' });
     }
 
-    if (!process.env.GOOGLE_MAPS_API_KEY) {
-      console.error('GOOGLE_MAPS_API_KEY is not set');
+    if (!process.env.GOOGLE_MAPS_BACKEND_KEY) {
+      console.error('GOOGLE_MAPS_BACKEND_KEY is not set');
       return res.status(500).json({ error: 'Google Maps API key not configured' });
     }
 
@@ -75,7 +75,7 @@ router.get('/places/details', async (req, res) => {
     const response = await axios.get('https://maps.googleapis.com/maps/api/place/details/json', {
       params: {
         place_id,
-        key: process.env.GOOGLE_MAPS_API_KEY
+        key: process.env.GOOGLE_MAPS_BACKEND_KEY
       }
     });
 
@@ -102,8 +102,8 @@ router.get('/mosques/nearby', async (req, res) => {
       return res.status(400).json({ error: 'Latitude and longitude are required' });
     }
 
-    if (!process.env.GOOGLE_MAPS_API_KEY) {
-      console.error('GOOGLE_MAPS_API_KEY is not set');
+    if (!process.env.GOOGLE_MAPS_BACKEND_KEY) {
+      console.error('GOOGLE_MAPS_BACKEND_KEY is not set');
       return res.status(500).json({ error: 'Google Maps API key not configured' });
     }
 
@@ -115,7 +115,7 @@ router.get('/mosques/nearby', async (req, res) => {
         radius,
         keyword: 'mosque',
         type: 'place_of_worship',
-        key: process.env.GOOGLE_MAPS_API_KEY
+        key: process.env.GOOGLE_MAPS_BACKEND_KEY
       }
     });
 
@@ -145,8 +145,8 @@ router.get('/geocode', async (req, res) => {
       return res.status(400).json({ error: 'Latitude and longitude are required' });
     }
 
-    if (!process.env.GOOGLE_MAPS_API_KEY) {
-      console.error('GOOGLE_MAPS_API_KEY is not set');
+    if (!process.env.GOOGLE_MAPS_BACKEND_KEY) {
+      console.error('GOOGLE_MAPS_BACKEND_KEY is not set');
       return res.status(500).json({ error: 'Google Maps API key not configured' });
     }
 
@@ -155,7 +155,7 @@ router.get('/geocode', async (req, res) => {
     const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
       params: {
         latlng: `${lat},${lng}`,
-        key: process.env.GOOGLE_MAPS_API_KEY
+        key: process.env.GOOGLE_MAPS_BACKEND_KEY
       }
     });
 
