@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { LocalStorage } from '../../utils/localStorage';
 
 interface Mosque {
   id: string;
@@ -29,10 +30,18 @@ const WorkingMosqueLocator: React.FC = () => {
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchRadius, setSearchRadius] = useState<number>(8047); // Default 5 miles in meters
+  const [searchRadius, setSearchRadius] = useState<number>(LocalStorage.getSearchRadius());
 
   useEffect(() => {
-    getCurrentLocation();
+    // Check if we have saved location first
+    const savedCoords = LocalStorage.getLastCoords();
+    if (savedCoords && LocalStorage.getLocationPermissionGranted()) {
+      setUserLocation(savedCoords);
+      getLocationName(savedCoords.lat, savedCoords.lng);
+      findNearbyMosques(savedCoords.lat, savedCoords.lng);
+    } else {
+      getCurrentLocation();
+    }
   }, []);
 
   const getCurrentLocation = () => {
@@ -52,6 +61,8 @@ const WorkingMosqueLocator: React.FC = () => {
           lng: position.coords.longitude
         };
         setUserLocation(location);
+        LocalStorage.setLastCoords(location);
+        LocalStorage.setLocationPermissionGranted(true);
         getLocationName(location.lat, location.lng);
         findNearbyMosques(location.lat, location.lng);
       },
@@ -152,7 +163,9 @@ const WorkingMosqueLocator: React.FC = () => {
         });
         
         const locationStr = [city, state, country].filter(Boolean).join(', ');
-        setLocationName(locationStr || 'Unknown Location');
+        const finalLocation = locationStr || 'Unknown Location';
+        setLocationName(finalLocation);
+        LocalStorage.setLastLocation(finalLocation);
       } else {
         setLocationName(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
       }
@@ -191,6 +204,7 @@ const WorkingMosqueLocator: React.FC = () => {
 
   const handleRadiusChange = (newRadius: number) => {
     setSearchRadius(newRadius);
+    LocalStorage.setSearchRadius(newRadius);
     if (userLocation) {
       findNearbyMosques(userLocation.lat, userLocation.lng);
     }

@@ -1,10 +1,12 @@
+import { LocalStorage } from '../utils/localStorage';
+
 class AthanNotificationService {
   private audio: HTMLAudioElement | null = null;
   private notificationPermission: NotificationPermission = 'default';
   private scheduledNotifications: Map<string, NodeJS.Timeout> = new Map();
-  private audioInitialized = false;
+  private audioInitialized = LocalStorage.getAudioEnabled();
   private isPlaying = false;
-  private userInteracted = false;
+  private userInteracted = LocalStorage.getAudioEnabled();
   private wakeLock: any = null;
 
   constructor() {
@@ -97,6 +99,7 @@ class AthanNotificationService {
         this.audio.currentTime = 0;
         this.audioInitialized = true;
         this.userInteracted = true;
+        LocalStorage.setAudioEnabled(true);
       }
     } catch (error) {
       // Expected to fail on mobile, but this attempt helps unlock audio
@@ -340,6 +343,7 @@ class AthanNotificationService {
         this.audio.currentTime = 0;
         await this.audio.play();
         this.audioInitialized = true;
+        LocalStorage.setAudioEnabled(true);
         console.log('Test sound played successfully');
         return true;
       } catch (error) {
@@ -351,6 +355,7 @@ class AthanNotificationService {
           testAudio.volume = this.audio.volume;
           await testAudio.play();
           this.audioInitialized = true;
+          LocalStorage.setAudioEnabled(true);
           return true;
         } catch (fallbackError) {
           console.error('Fallback audio also failed:', fallbackError);

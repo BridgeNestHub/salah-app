@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../types/google-maps.ts';
 import { athanService } from '../../services/athanNotification';
+import { LocalStorage } from '../../utils/localStorage';
 import '../../styles/athan-notification.css';
 
 interface PrayerTimings {
@@ -31,12 +32,14 @@ interface PrayerData {
 
 const PrayerTimes: React.FC = () => {
   const [prayerData, setPrayerData] = useState<PrayerData | null>(null);
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState(LocalStorage.getLastLocation() || '');
   const [loading, setLoading] = useState(false);
   const [volume, setVolume] = useState(0.8);
-  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(LocalStorage.getAudioEnabled());
 
-  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>(
+    LocalStorage.getLocationPermissionGranted() ? 'granted' : 'prompt'
+  );
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
 
   const iqamaOffsets = {
@@ -66,29 +69,44 @@ const PrayerTimes: React.FC = () => {
     try {
       const success = await athanService.testAthansound();
       setAudioEnabled(success);
+      LocalStorage.setAudioEnabled(success);
       if (!success) {
         alert('❌ Audio blocked by browser. Please:\n1. Enable sound in browser settings\n2. Make sure device is not on silent mode\n3. Try refreshing the page');
       }
     } catch (error) {
       console.error('Failed to enable audio:', error);
       setAudioEnabled(false);
+      LocalStorage.setAudioEnabled(false);
     }
   };
 
   const initializeLocation = async () => {
+    const savedLocation = LocalStorage.getLastLocation();
+    const savedCoords = LocalStorage.getLastCoords();
+    
+    // If we have saved location, use it first
+    if (savedLocation && savedCoords) {
+      setLocation(savedLocation);
+      fetchPrayerTimesByCoords(savedCoords.lat, savedCoords.lng);
+      return;
+    }
+    
     // Check if user previously granted location permission
     if (navigator.permissions) {
       const permission = await navigator.permissions.query({name: 'geolocation'});
       setLocationPermission(permission.state);
       
-      if (permission.state === 'granted') {
+      if (permission.state === 'granted' || LocalStorage.getLocationPermissionGranted()) {
         getUserLocation();
       } else {
-        // Use Google Maps to get approximate location based on IP
-        getApproximateLocation();
+        // Use saved location or get approximate location
+        if (savedLocation) {
+          fetchPrayerTimes(savedLocation);
+        } else {
+          getApproximateLocation();
+        }
       }
     } else {
-      // Fallback for browsers without permissions API
       getUserLocation();
     }
   };
@@ -122,6 +140,7 @@ const PrayerTimes: React.FC = () => {
       const data = await response.json();
       setPrayerData(data.data);
       setLocation(city);
+      LocalStorage.setLastLocation(city);
       
       // Schedule Athan notifications
       if (data.data?.timings) {
@@ -143,6 +162,8 @@ const PrayerTimes: React.FC = () => {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
+          LocalStorage.setLastCoords({ lat: latitude, lng: longitude });
+          LocalStorage.setLocationPermissionGranted(true);
           
           // Try to get formatted address using backend geocoding service
           try {
@@ -161,6 +182,7 @@ const PrayerTimes: React.FC = () => {
               const locationParts = [city, state, zipcode, country].filter(Boolean);
               const address = locationParts.join(', ');
               setLocation(address);
+              LocalStorage.setLastLocation(address);
             } else {
               setLocation('Current Location');
             }
@@ -171,11 +193,20 @@ const PrayerTimes: React.FC = () => {
           fetchPrayerTimesByCoords(latitude, longitude);
           
           setLocationPermission('granted');
+          LocalStorage.setLocationPermissionGranted(true);
         },
         (error) => {
           console.error('Error getting location:', error);
           setLocationPermission('denied');
-          getApproximateLocation();
+          LocalStorage.setLocationPermissionGranted(false);
+          
+          // Use saved location if available, otherwise get approximate
+          const savedLocation = LocalStorage.getLastLocation();
+          if (savedLocation) {
+            fetchPrayerTimes(savedLocation);
+          } else {
+            getApproximateLocation();
+          }
           setLoading(false);
         },
         {
@@ -273,6 +304,7 @@ const PrayerTimes: React.FC = () => {
                 const inputValue = (e.target as HTMLInputElement).value;
                 if (inputValue.trim()) {
                   setLocation(inputValue);
+                  LocalStorage.setLastLocation(inputValue);
                   fetchPrayerTimes(inputValue);
                 }
               }

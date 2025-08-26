@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { LocalStorage } from '../../utils/localStorage';
 import './QiblaCompass.css';
 
 interface Coordinates {
@@ -26,6 +27,7 @@ const QiblaCompass: React.FC = () => {
   const [accuracy, setAccuracy] = useState<number>(0);
   const [showPermissionButton, setShowPermissionButton] = useState<boolean>(false);
   const [isManualMode, setIsManualMode] = useState<boolean>(false);
+  const [compassEnabled, setCompassEnabled] = useState<boolean>(false);
   
   // Smoothing for compass readings
   const headingHistory = useRef<number[]>([]);
@@ -54,6 +56,22 @@ const QiblaCompass: React.FC = () => {
 
   const getLocation = (): Promise<void> => {
     return new Promise((resolve, reject) => {
+      // Check if we have saved location first
+      const savedCoords = LocalStorage.getLastCoords();
+      if (savedCoords && LocalStorage.getLocationPermissionGranted()) {
+        const coords = {
+          latitude: savedCoords.lat,
+          longitude: savedCoords.lng
+        };
+        setLocation(coords);
+        const { bearing, distance } = calculateQiblaAndDistance(coords);
+        setQiblaDirection(bearing);
+        setDistance(distance);
+        setLoading(false);
+        resolve();
+        return;
+      }
+      
       if (!navigator.geolocation) {
         reject(new Error('Geolocation not supported'));
         return;
@@ -67,6 +85,8 @@ const QiblaCompass: React.FC = () => {
             longitude: position.coords.longitude
           };
           setLocation(coords);
+          LocalStorage.setLastCoords({ lat: coords.latitude, lng: coords.longitude });
+          LocalStorage.setLocationPermissionGranted(true);
           setAccuracy(position.coords.accuracy || 0);
           const { bearing, distance } = calculateQiblaAndDistance(coords);
           setQiblaDirection(bearing);
@@ -75,6 +95,7 @@ const QiblaCompass: React.FC = () => {
           resolve();
         },
         (err) => {
+          LocalStorage.setLocationPermissionGranted(false);
           setError('Location access denied. Please enable location services.');
           setLoading(false);
           reject(err);
@@ -138,6 +159,7 @@ const QiblaCompass: React.FC = () => {
           const response = await (DeviceOrientationEvent as any).requestPermission();
           if (response === 'granted') {
             permissionGranted = true;
+            setCompassEnabled(true);
             setShowPermissionButton(false);
           } else {
             setError('Motion & orientation access is required for the compass to work.');
@@ -240,6 +262,7 @@ const QiblaCompass: React.FC = () => {
         const response = await (DeviceOrientationEvent as any).requestPermission();
         if (response === 'granted') {
           setError('');
+          setCompassEnabled(true);
           setShowPermissionButton(false);
           setupCompass();
         } else {
