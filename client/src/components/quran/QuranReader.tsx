@@ -143,18 +143,15 @@ const QuranReader: React.FC = () => {
     if (currentSurah && currentAyah < currentSurah.numberOfAyahs) {
       setCurrentAyah(currentAyah + 1);
       if (isPlaying && autoPlay) {
-        playAyah();
+        setTimeout(playAyah, 500);
       }
     }
   };
 
   const handleAudioEnd = () => {
-    if (autoPlay && currentSurah && currentAyah < currentSurah.numberOfAyahs) {
-      const newAyah = currentAyah + 1;
-      setCurrentAyah(newAyah);
-      playAyah();
-    } else {
-      setIsPlaying(false);
+    setIsPlaying(false);
+    if (autoPlay) {
+      nextAyah();
     }
   };
 
@@ -162,7 +159,7 @@ const QuranReader: React.FC = () => {
     if (currentAyah > 1) {
       setCurrentAyah(currentAyah - 1);
       if (isPlaying) {
-        playAyah();
+        setTimeout(playAyah, 500);
       }
     }
   };

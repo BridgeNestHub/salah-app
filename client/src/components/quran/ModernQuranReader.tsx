@@ -425,20 +425,17 @@ const ModernQuranReader: React.FC = () => {
       setCurrentAyah(newAyah);
       scrollToAyah(newAyah);
 
-      // Use cached audio for instant playback
+      // Direct cached audio playback
       const cachedAudio = audioCache.current.get(`${currentSurah.number}-${newAyah}`);
-      if (cachedAudio && cachedAudio.readyState >= 3) {
+      if (cachedAudio && (cachedAudio.readyState >= 3 || cachedAudio.duration > 0)) {
         cachedAudio.currentTime = 0;
-        cachedAudio.play().catch(() => {});
+        cachedAudio.play();
       } else {
-        // Safe fallback - pause first to avoid conflicts
-        audioRef.current!.pause();
+        // Immediate fallback without loading
         const audioSources = getAudioSources(currentSurah.number, newAyah, selectedReciter.id);
         audioRef.current!.src = audioSources.primary;
-        audioRef.current!.load();
-        audioRef.current!.addEventListener('canplay', () => {
-          audioRef.current!.play().catch(() => {});
-        }, { once: true });
+        audioRef.current!.currentTime = 0;
+        audioRef.current!.play();
       }
     } else if (currentSurah.number < 114) {
       const nextSurah = surahs.find(s => s.number === currentSurah.number + 1);
