@@ -73,11 +73,10 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({ center, zoom, mosques, o
             <h4 style="margin: 0 0 8px 0;">${mosque.name}</h4>
             <p style="margin: 0 0 8px 0; font-size: 14px;">${mosque.formatted_address}</p>
             ${mosque.rating ? `<p style="margin: 0 0 8px 0;">⭐ ${mosque.rating}/5</p>` : ''}
-            ${mosque.isOpen !== undefined ? `<p style="margin: 0 0 8px 0; color: ${mosque.isOpen ? '#28a745' : '#dc3545'};">• ${mosque.isOpen ? 'Open Now' : 'Closed'}</p>` : ''}
+
             ${mosque.distance ? `<p style="margin: 0 0 12px 0;"><strong>Distance:</strong> ${mosque.distance.toFixed(2)} miles</p>` : ''}
-            <div style="display: flex; gap: 8px;">
-              <button id="directions-btn-${mosque.place_id}" style="padding: 4px 8px; background: #4285F4; color: white; border: none; border-radius: 4px; cursor: pointer;">Directions</button>
-              <button id="streetview-btn-${mosque.place_id}" style="padding: 4px 8px; background: #34A853; color: white; border: none; border-radius: 4px; cursor: pointer;">Street View</button>
+            <div style="display: flex; justify-content: flex-start;">
+              <button id="directions-btn-${mosque.place_id}" style="padding: 6px 12px; background: #2196f3; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Directions</button>
             </div>
           </div>
         `;
@@ -89,9 +88,6 @@ const GoogleMapComponent: React.FC<GoogleMapProps> = ({ center, zoom, mosques, o
           setTimeout(() => {
             document.getElementById(`directions-btn-${mosque.place_id}`)?.addEventListener('click', () => {
               onDirections(mosque);
-            });
-            document.getElementById(`streetview-btn-${mosque.place_id}`)?.addEventListener('click', () => {
-              onStreetView(mosque);
             });
           }, 0);
         });
@@ -302,13 +298,11 @@ const MosqueLocator: React.FC = () => {
                   <p>{mosque.formatted_address}</p>
                   <div className="mosque-details">
                     {mosque.rating && <span className="rating">⭐ {mosque.rating}/5</span>}
-                    {mosque.isOpen !== undefined && <span className={`status ${mosque.isOpen ? 'open' : 'closed'}`}>• {mosque.isOpen ? 'Open' : 'Closed'}</span>}
                     {mosque.distance && <span className="distance">{mosque.distance.toFixed(2)} miles away</span>}
                   </div>
-                </div>
-                <div className="mosque-actions">
-                  <button onClick={() => getDirections(mosque)} className="btn-directions">📍 Directions</button>
-                  <button onClick={() => openStreetView(mosque)} className="btn-street-view">👁️ Street View</button>
+                  <div className="mosque-actions">
+                    <button onClick={() => getDirections(mosque)} className="btn-directions">Directions</button>
+                  </div>
                 </div>
               </li>
             ))}

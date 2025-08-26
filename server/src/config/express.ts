@@ -15,6 +15,7 @@ import staffContactRoutes from '../routes/staff/contact';
 import publicMapsRoutes from '../routes/public/maps';
 import publicPrayerRoutes from '../routes/public/prayer';
 import publicLocationRoutes from '../routes/public/location';
+import publicHadithRoutes from '../routes/public/hadith';
 
 export const configureExpress = (app: express.Application) => {
   // Security middleware with custom CSP
@@ -83,6 +84,7 @@ export const configureExpress = (app: express.Application) => {
   
   app.use('/api/prayer', publicPrayerRoutes);
   app.use('/api/location', publicLocationRoutes);
+  app.use('/api/hadith', publicHadithRoutes);
 
   // Test route to verify maps are working
   app.get('/api/maps-test', (req, res) => {

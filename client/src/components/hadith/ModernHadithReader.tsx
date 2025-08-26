@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaPlay, FaPause, FaStop, FaForward, FaBackward, FaRandom, FaBookmark, FaSearch, FaCog } from 'react-icons/fa';
-import { fetchFromSunnah, fetchFromHadithAPI, fetchFromAltAPI, searchHadiths, fetchHadithWithFallback } from '../../services/hadithApi';
+import { fetchFromSunnah, fetchFromHadithAPI, fetchFromAltAPI, fetchHadithWithFallback } from '../../services/hadithApi';
+import { searchHadiths, getRandomHadith, getHadithCollections } from '../../services/enhancedHadithApi';
 import { fetchHadithProxy } from '../../services/proxyApi';
 
 const translateText = async (text: string): Promise<string> => {
@@ -250,14 +251,15 @@ const ModernHadithReader: React.FC = () => {
     }
   };
 
-  const getRandomHadith = async () => {
-    const randomNumber = Math.floor(Math.random() * 100) + 1;
+  const loadRandomHadith = async () => {
     try {
-      const hadith = await fetchFromHadithAPI(currentCollection?.id || 'bukhari', randomNumber.toString());
+      const hadith = await getRandomHadith();
       setCurrentHadith(hadith);
-      setCurrentHadithIndex(randomNumber - 1);
+      setCurrentHadithIndex(Math.floor(Math.random() * 100));
     } catch (error) {
       console.error('Failed to load random hadith:', error);
+      // Fallback to a default hadith
+      setCurrentHadith(sampleHadiths[Math.floor(Math.random() * sampleHadiths.length)]);
     }
   };
 
@@ -270,46 +272,13 @@ const ModernHadithReader: React.FC = () => {
     localStorage.setItem('hadith-bookmarks', JSON.stringify(newBookmarks));
   };
 
-  const searchHadiths = async () => {
+  const performSearch = async () => {
     if (!searchTerm.trim()) return;
     
     setIsSearching(true);
     try {
-      // Search across multiple collections
-      const searchPromises = ['bukhari', 'muslim'].map(async (collection) => {
-        try {
-          const response = await fetch(`https://api.hadith.gading.dev/books/${collection}?range=1-50`);
-          const data = await response.json();
-          if (data.data?.hadiths) {
-            return data.data.hadiths.filter((hadith: any) => 
-              hadith.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              hadith.arab?.toLowerCase().includes(searchTerm.toLowerCase())
-            ).map(async (hadith: any) => {
-              const translatedText = await translateText(hadith.id || '');
-              return {
-                id: hadith.number?.toString() || '1',
-                collection: collection,
-                book: data.data?.name || collection,
-                chapter: '',
-                hadithNumber: hadith.number?.toString() || '1',
-                arabicText: hadith.arab || '',
-                translation: translatedText,
-                narrator: '',
-                grade: 'Sahih',
-                reference: `${collection} ${hadith.number || '1'}`
-              };
-            });
-          }
-          return [];
-        } catch {
-          return [];
-        }
-      });
-      
-      const results = await Promise.all(searchPromises);
-      const nestedResults = await Promise.all(results.map(arr => Promise.all(arr)));
-      const flatResults = nestedResults.flat().slice(0, 10); // Limit to 10 results
-      setSearchResults(flatResults);
+      const results = await searchHadiths(searchTerm.trim());
+      setSearchResults(results);
     } catch (error) {
       console.error('Search failed:', error);
       setSearchResults([]);
@@ -502,7 +471,7 @@ const ModernHadithReader: React.FC = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search hadiths by text or narrator..."
+            placeholder="Search hadiths by topic, narrator, or keywords..."
             style={{
               flex: 1,
               padding: '0.75rem',
@@ -510,34 +479,61 @@ const ModernHadithReader: React.FC = () => {
               borderRadius: '0.5rem',
               fontSize: '0.875rem'
             }}
-            onKeyPress={(e) => e.key === 'Enter' && searchHadiths()}
+            onKeyPress={(e) => e.key === 'Enter' && performSearch()}
           />
           <button
-            onClick={searchHadiths}
-            disabled={isSearching}
+            onClick={performSearch}
+            disabled={isSearching || !searchTerm.trim()}
             style={{
               padding: '0.75rem 1.5rem',
-              background: '#059669',
+              background: isSearching || !searchTerm.trim() ? '#9ca3af' : '#059669',
               color: 'white',
               border: 'none',
               borderRadius: '0.5rem',
-              cursor: 'pointer',
+              cursor: isSearching || !searchTerm.trim() ? 'not-allowed' : 'pointer',
               fontSize: '0.875rem',
-              fontWeight: '500'
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
             }}
           >
-            {isSearching ? 'Searching...' : 'Search'}
+            {isSearching ? (
+              <>
+                <div style={{
+                  width: '1rem',
+                  height: '1rem',
+                  border: '2px solid transparent',
+                  borderTop: '2px solid white',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                Searching...
+              </>
+            ) : 'Search'}
           </button>
         </div>
 
-        {searchResults.length > 0 && (
+        {searchResults.length > 0 ? (
           <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            <div style={{ 
+              padding: '0.5rem 0.75rem', 
+              background: '#f3f4f6', 
+              borderRadius: '0.5rem 0.5rem 0 0',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              color: '#374151',
+              marginBottom: '0.5rem'
+            }}>
+              Found {searchResults.length} hadith{searchResults.length !== 1 ? 's' : ''}
+            </div>
             {searchResults.map((hadith, index) => (
               <div
-                key={hadith.id}
+                key={`${hadith.collection}-${hadith.id}-${index}`}
                 onClick={() => {
                   setCurrentHadith(hadith);
                   setSearchResults([]);
+                  setSearchTerm('');
                 }}
                 style={{
                   padding: '0.75rem',
@@ -545,19 +541,46 @@ const ModernHadithReader: React.FC = () => {
                   borderRadius: '0.5rem',
                   marginBottom: '0.5rem',
                   cursor: 'pointer',
-                  background: '#f9fafb'
+                  background: '#f9fafb',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#f0fdf4';
+                  e.currentTarget.style.borderColor = '#bbf7d0';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#f9fafb';
+                  e.currentTarget.style.borderColor = '#e5e7eb';
                 }}
               >
                 <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#059669', marginBottom: '0.25rem' }}>
                   {hadith.collection} - {hadith.reference}
                 </div>
-                <div style={{ fontSize: '0.875rem', color: '#374151' }}>
+                <div style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.25rem' }}>
                   {hadith.translation.substring(0, 150)}...
                 </div>
+                {hadith.narrator && (
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                    Narrator: {hadith.narrator}
+                  </div>
+                )}
               </div>
             ))}
           </div>
-        )}
+        ) : searchTerm && !isSearching ? (
+          <div style={{
+            padding: '2rem',
+            textAlign: 'center',
+            color: '#6b7280',
+            fontSize: '0.875rem'
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔍</div>
+            <div>No hadiths found for "{searchTerm}"</div>
+            <div style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
+              Try keywords like: prayer, charity, kindness, patience, forgiveness
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* Search Panel */}
@@ -581,10 +604,10 @@ const ModernHadithReader: React.FC = () => {
                 border: '1px solid #d1d5db',
                 borderRadius: '0.5rem'
               }}
-              onKeyPress={(e) => e.key === 'Enter' && searchHadiths()}
+              onKeyPress={(e) => e.key === 'Enter' && performSearch()}
             />
             <button
-              onClick={searchHadiths}
+              onClick={performSearch}
               disabled={isSearching}
               style={{
                 padding: '0.75rem 1.5rem',
@@ -720,7 +743,24 @@ const ModernHadithReader: React.FC = () => {
 
 
 
+
+
       <audio ref={audioRef} />
+      
+      {/* Add CSS for animations */}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import ModernHadithReader from '../../components/hadith/ModernHadithReader';
+import ResponsiveHadithReader from '../../components/hadith/ResponsiveHadithReader';
 
 const HadithPage: React.FC = () => {
   return (
@@ -14,7 +14,7 @@ const HadithPage: React.FC = () => {
         </header>
 
         <main>
-          <ModernHadithReader />
+          <ResponsiveHadithReader />
         </main>
       </div>
     </div>

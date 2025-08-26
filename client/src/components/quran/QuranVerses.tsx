@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toArabicNumerals } from '../../utils/arabicNumerals';
 
 interface Verse {
   surah: number;
@@ -75,7 +76,7 @@ const QuranVerses: React.FC = () => {
       {currentVerse && (
         <div className="verse-container">
           <div className="verse-header">
-            <h3>Surah {currentVerse.surahName} ({currentVerse.surah}:{currentVerse.ayah})</h3>
+            <h3>Surah {currentVerse.surahName} ({toArabicNumerals(currentVerse.surah)}:{toArabicNumerals(currentVerse.ayah)})</h3>
           </div>
           
           <div className="arabic-text">

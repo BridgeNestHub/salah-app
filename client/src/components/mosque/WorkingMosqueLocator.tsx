@@ -297,60 +297,43 @@ const WorkingMosqueLocator: React.FC = () => {
           {mosques.map((mosque) => (
             <li key={mosque.id} style={{
               border: '1px solid #ddd',
-              borderRadius: '8px',
-              padding: '15px',
-              marginBottom: '15px',
+              borderRadius: '6px',
+              padding: '12px',
+              marginBottom: '10px',
               background: '#fff'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div className="mosque-info" style={{ flex: 1 }}>
-                  <h4 style={{ margin: '0 0 5px 0', color: '#2e7d32' }}>{mosque.name}</h4>
-                  <p style={{ margin: '0 0 10px 0', color: '#666' }}>{mosque.address}</p>
-                  <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', fontSize: '14px', color: '#555' }}>
+              <div style={{ width: '100%' }}>
+                <div className="mosque-info" style={{ width: '100%' }}>
+                  <h4 style={{ margin: '0 0 4px 0', color: '#2e7d32', fontSize: '16px' }}>{mosque.name}</h4>
+                  <p style={{ margin: '0 0 6px 0', color: '#666', fontSize: '13px' }}>{mosque.address}</p>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '13px', color: '#555', marginBottom: '8px' }}>
                     {mosque.rating && (
                       <span>⭐ {mosque.rating}/5 {mosque.user_ratings_total && `(${mosque.user_ratings_total} reviews)`}</span>
                     )}
                     {mosque.distance && (
                       <span>📍 {mosque.distance.toFixed(1)} miles away</span>
                     )}
-                    {mosque.opening_hours?.open_now !== undefined && (
-                      <span style={{ color: mosque.opening_hours.open_now ? '#4caf50' : '#f44336' }}>
-                        {mosque.opening_hours.open_now ? '🟢 Open Now' : '🔴 Closed'}
-                      </span>
-                    )}
                   </div>
-                </div>
-                <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
-                  <button 
-                    onClick={() => getDirections(mosque)}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: '4px',
-                      border: '1px solid #2196f3',
-                      background: '#2196f3',
-                      color: 'white',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}
-                  >
-                    📍 Directions
-                  </button>
-                  {mosque.phone && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '10px' }}>
                     <button 
-                      onClick={() => callMosque(mosque)}
+                      onClick={() => getDirections(mosque)}
                       style={{
-                        padding: '8px 12px',
+                        padding: '6px 12px',
                         borderRadius: '4px',
-                        border: '1px solid #4caf50',
-                        background: '#4caf50',
+                        border: 'none',
+                        background: '#2196f3',
                         color: 'white',
                         cursor: 'pointer',
-                        fontSize: '14px'
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        transition: 'background-color 0.2s ease'
                       }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#1976d2'}
+                      onMouseOut={(e) => e.currentTarget.style.background = '#2196f3'}
                     >
-                      📞 Call
+                      Directions
                     </button>
-                  )}
+                  </div>
                 </div>
               </div>
             </li>

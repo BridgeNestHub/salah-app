@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaPlay, FaPause, FaStop, FaForward, FaBackward } from 'react-icons/fa';
+import { toArabicNumerals } from '../../utils/arabicNumerals';
 
 interface Ayah {
   number: number;
@@ -142,15 +143,18 @@ const QuranReader: React.FC = () => {
     if (currentSurah && currentAyah < currentSurah.numberOfAyahs) {
       setCurrentAyah(currentAyah + 1);
       if (isPlaying && autoPlay) {
-        setTimeout(playAyah, 500);
+        playAyah();
       }
     }
   };
 
   const handleAudioEnd = () => {
-    setIsPlaying(false);
-    if (autoPlay) {
-      nextAyah();
+    if (autoPlay && currentSurah && currentAyah < currentSurah.numberOfAyahs) {
+      const newAyah = currentAyah + 1;
+      setCurrentAyah(newAyah);
+      playAyah();
+    } else {
+      setIsPlaying(false);
     }
   };
 
@@ -158,7 +162,7 @@ const QuranReader: React.FC = () => {
     if (currentAyah > 1) {
       setCurrentAyah(currentAyah - 1);
       if (isPlaying) {
-        setTimeout(playAyah, 500);
+        playAyah();
       }
     }
   };
@@ -203,7 +207,7 @@ const QuranReader: React.FC = () => {
                 >
                   {surahs.map(surah => (
                     <option key={surah.number} value={surah.number} className="bg-white text-gray-800">
-                      {surah.number}. {surah.englishName}
+                      {toArabicNumerals(surah.number)}. {surah.englishName}
                     </option>
                   ))}
                 </select>
@@ -342,7 +346,7 @@ const QuranReader: React.FC = () => {
               >
                 <div className="flex items-start gap-3">
                   <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1">
-                    {ayah.numberInSurah}
+                    {toArabicNumerals(ayah.numberInSurah)}
                   </span>
                   <div className="flex-1">
                     <div 
@@ -406,7 +410,7 @@ const QuranReader: React.FC = () => {
           
           {currentSurah && (
             <div className="ml-4 text-sm text-gray-600">
-              Ayah {currentAyah} of {currentSurah.numberOfAyahs}
+              Ayah {toArabicNumerals(currentAyah)} of {toArabicNumerals(currentSurah.numberOfAyahs)}
             </div>
           )}
         </div>

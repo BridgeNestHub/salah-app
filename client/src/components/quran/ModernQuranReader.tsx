@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { FaPlay, FaPause, FaSquare, FaForward, FaBackward, FaStepBackward, FaStepForward, FaExclamationTriangle } from 'react-icons/fa';
 import './ModernQuranReader.css';
 import { getAudioSources, getBismillahSources, getWorkingAudioUrl } from '../../utils/audioUtils';
+import { toArabicNumerals } from '../../utils/arabicNumerals';
 
 interface Ayah {
   number: number;
@@ -123,6 +124,7 @@ const ModernQuranReader: React.FC = () => {
   
   const audioRef = React.useRef<HTMLAudioElement>(null);
   const nextAudioRef = React.useRef<HTMLAudioElement>(null);
+  const isMainAudio = React.useRef<boolean>(true);
 
   const reciters: Reciter[] = [
     { id: 1, name: 'Abdul Basit Abdul Samad' },
@@ -140,6 +142,21 @@ const ModernQuranReader: React.FC = () => {
     5: 'ar.hanirifai'
   };
 
+  const preloadSurahAudio = useCallback((surah: Surah) => {
+    if (!selectedReciter) return;
+    
+    audioCache.current.clear();
+    
+    for (let i = 1; i <= surah.numberOfAyahs; i++) {
+      const audioSources = getAudioSources(surah.number, i, selectedReciter.id);
+      const audio = new Audio();
+      audio.src = audioSources.primary;
+      audio.preload = 'auto';
+      audio.crossOrigin = 'anonymous';
+      audioCache.current.set(`${surah.number}-${i}`, audio);
+    }
+  }, [selectedReciter]);
+
   useEffect(() => {
     fetchSurahs();
     if (!selectedReciter) {
@@ -148,6 +165,12 @@ const ModernQuranReader: React.FC = () => {
       localStorage.setItem('quran-selected-reciter', JSON.stringify(defaultReciter));
     }
   }, [selectedReciter]);
+
+  useEffect(() => {
+    if (currentSurah && selectedReciter) {
+      preloadSurahAudio(currentSurah);
+    }
+  }, [currentSurah, selectedReciter, preloadSurahAudio]);
 
   const fetchSurahs = async () => {
     try {
@@ -184,6 +207,8 @@ const ModernQuranReader: React.FC = () => {
     }
   };
 
+  const audioCache = React.useRef<Map<string, HTMLAudioElement>>(new Map());
+
   const selectSurah = (surah: Surah) => {
     setCurrentSurah(surah);
     fetchTranslation(surah.number);
@@ -194,26 +219,19 @@ const ModernQuranReader: React.FC = () => {
 
 
 
-  const preloadNextAudio = (ayahNumber: number) => {
+  const preloadNextAudio = useCallback((ayahNumber: number) => {
     const totalAyahs = currentSurah?.ayahs?.length || currentSurah?.numberOfAyahs;
     if (currentSurah && selectedReciter && totalAyahs && ayahNumber < totalAyahs && nextAudioRef.current) {
-      try {
-        const nextAudioSources = getAudioSources(currentSurah.number, ayahNumber + 1, selectedReciter.id);
-        nextAudioRef.current.src = nextAudioSources.primary;
-        nextAudioRef.current.playbackRate = playbackSpeed;
-        nextAudioRef.current.load();
-        
-        // Force preload to complete
-        nextAudioRef.current.addEventListener('canplaythrough', () => {
-          // Audio is ready for seamless playback
-        }, { once: true });
-      } catch {
-        // Silently fail preloading
-      }
+      const nextAudioSources = getAudioSources(currentSurah.number, ayahNumber + 1, selectedReciter.id);
+      nextAudioRef.current.src = nextAudioSources.primary;
+      nextAudioRef.current.playbackRate = playbackSpeed;
+      nextAudioRef.current.preload = 'auto';
+      nextAudioRef.current.volume = 1.0;
+      nextAudioRef.current.load();
     }
-  };
+  }, [currentSurah, selectedReciter, playbackSpeed]);
 
-  const playAyahImmediate = async (ayahNumber = currentAyah) => {
+  const playAyahImmediate = useCallback(async (ayahNumber = currentAyah) => {
     if (!currentSurah || !selectedReciter) {
       setAudioError('Missing surah or reciter selection');
       return;
@@ -223,57 +241,34 @@ const ModernQuranReader: React.FC = () => {
     setAudioLoading(true);
     
     if (audioRef.current) {
-      // Stop any current playback first
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      
       const audioSources = getAudioSources(currentSurah.number, ayahNumber, selectedReciter.id);
       
-      // Set source and optimize settings immediately
       audioRef.current.src = audioSources.primary;
-      audioRef.current.preload = 'auto';
       audioRef.current.playbackRate = playbackSpeed;
       audioRef.current.volume = 1.0;
       
-      // Force immediate load
-      audioRef.current.load();
-      
-      // Start preloading next audio immediately
-      preloadNextAudio(ayahNumber);
-      
-      // Wait for audio to be ready and play immediately
-      const playAudio = () => {
-        audioRef.current!.play().then(() => {
+      try {
+        await audioRef.current.play();
+        setIsPlaying(true);
+        setAudioLoading(false);
+        // Start preloading the next ayah immediately
+        preloadNextAudio(ayahNumber);
+      } catch (error) {
+        audioRef.current.src = audioSources.fallback;
+        audioRef.current.playbackRate = playbackSpeed;
+        try {
+          await audioRef.current.play();
           setIsPlaying(true);
           setAudioLoading(false);
-        }).catch(() => {
-          // Try fallback source
-          audioRef.current!.src = audioSources.fallback;
-          audioRef.current!.load();
-          audioRef.current!.playbackRate = playbackSpeed;
-          audioRef.current!.play().then(() => {
-            setIsPlaying(true);
-            setAudioLoading(false);
-          }).catch(() => {
-            setAudioError('Audio not available for this ayah');
-            setIsPlaying(false);
-            setAudioLoading(false);
-          });
-        });
-      };
-      
-      // Try to play as soon as possible
-      if (audioRef.current.readyState >= 2) {
-        playAudio();
-      } else {
-        audioRef.current.addEventListener('canplay', playAudio, { once: true });
-        // Fallback timeout
-        setTimeout(() => {
-          if (audioLoading) playAudio();
-        }, 1000);
+          preloadNextAudio(ayahNumber);
+        } catch (fallbackError) {
+          setAudioError('Audio not available for this ayah');
+          setIsPlaying(false);
+          setAudioLoading(false);
+        }
       }
     }
-  };
+  }, [currentSurah, selectedReciter, playbackSpeed, preloadNextAudio]);
 
   const playBismillah = async (surahNumber: number) => {
     if (!selectedReciter) {
@@ -401,7 +396,6 @@ const ModernQuranReader: React.FC = () => {
       const newAyah = currentAyah + 1;
       setCurrentAyah(newAyah);
       scrollToAyah(newAyah);
-      // Preload immediately for faster playback
       if (selectedReciter && audioRef.current) {
         const audioSources = getAudioSources(currentSurah.number, newAyah, selectedReciter.id);
         audioRef.current.src = audioSources.primary;
@@ -414,59 +408,58 @@ const ModernQuranReader: React.FC = () => {
     }
   }, [currentSurah, currentAyah, isPlaying, selectedReciter]);
 
+  const getCurrentAudio = () => isMainAudio.current ? audioRef.current : nextAudioRef.current;
+  const getNextAudio = () => isMainAudio.current ? nextAudioRef.current : audioRef.current;
+
   const handleAudioEnd = useCallback(() => {
+    if (!autoPlay) {
+      setIsPlaying(false);
+      return;
+    }
+
     const totalAyahs = currentSurah?.ayahs?.length || currentSurah?.numberOfAyahs;
-    if (autoPlay && currentSurah && totalAyahs) {
-      if (currentAyah < totalAyahs) {
-        const newAyah = currentAyah + 1;
-        setCurrentAyah(newAyah);
-        scrollToAyah(newAyah);
-        
-        if (nextAudioRef.current && nextAudioRef.current.src && nextAudioRef.current.readyState >= 3) {
-          // Seamless transition using preloaded audio
-          audioRef.current!.pause();
-          audioRef.current!.src = nextAudioRef.current.src;
-          audioRef.current!.currentTime = 0;
-          audioRef.current!.playbackRate = playbackSpeed;
-          
-          // Ensure highlighting is updated
-          setCurrentAyah(newAyah);
-          scrollToAyah(newAyah);
-          
-          audioRef.current!.play().catch(() => {
-            playAyahImmediate(newAyah);
-          });
-          
-          preloadNextAudio(newAyah);
-        } else {
-          playAyahImmediate(newAyah);
-        }
-      } else if (currentSurah.number < 114) {
-        const nextSurah = surahs.find(s => s.number === currentSurah.number + 1);
-        if (nextSurah) {
-          selectSurah(nextSurah);
-          setTimeout(() => {
-            if (nextSurah.number !== 1 && nextSurah.number !== 9) {
-              playBismillah(nextSurah.number);
-            } else {
-              playAyahImmediate(1);
-            }
-          }, 100);
-        }
+    if (!currentSurah || !selectedReciter || !totalAyahs) return;
+
+    if (currentAyah < totalAyahs) {
+      const newAyah = currentAyah + 1;
+      setCurrentAyah(newAyah);
+      scrollToAyah(newAyah);
+
+      // Use cached audio for instant playback
+      const cachedAudio = audioCache.current.get(`${currentSurah.number}-${newAyah}`);
+      if (cachedAudio && cachedAudio.readyState >= 3) {
+        cachedAudio.currentTime = 0;
+        cachedAudio.play().catch(() => {});
       } else {
-        setIsPlaying(false);
+        // Safe fallback - pause first to avoid conflicts
+        audioRef.current!.pause();
+        const audioSources = getAudioSources(currentSurah.number, newAyah, selectedReciter.id);
+        audioRef.current!.src = audioSources.primary;
+        audioRef.current!.load();
+        audioRef.current!.addEventListener('canplay', () => {
+          audioRef.current!.play().catch(() => {});
+        }, { once: true });
+      }
+    } else if (currentSurah.number < 114) {
+      const nextSurah = surahs.find(s => s.number === currentSurah.number + 1);
+      if (nextSurah) {
+        selectSurah(nextSurah);
+        if (nextSurah.number !== 1 && nextSurah.number !== 9) {
+          playBismillah(nextSurah.number);
+        } else {
+          playAyahImmediate(1);
+        }
       }
     } else {
       setIsPlaying(false);
     }
-  }, [autoPlay, currentAyah, currentSurah, surahs, playbackSpeed]);
+  }, [autoPlay, currentAyah, currentSurah, selectedReciter, surahs]);
 
   const previousAyah = () => {
     if (currentAyah > 1) {
       const newAyah = currentAyah - 1;
       setCurrentAyah(newAyah);
       scrollToAyah(newAyah);
-      // Preload immediately for faster playback
       if (selectedReciter && audioRef.current && currentSurah) {
         const audioSources = getAudioSources(currentSurah.number, newAyah, selectedReciter.id);
         audioRef.current.src = audioSources.primary;
@@ -563,22 +556,22 @@ const ModernQuranReader: React.FC = () => {
       <audio 
         ref={audioRef} 
         onEnded={handleAudioEnd}
-        onError={(e) => {
+        onError={() => {
           setAudioError('Audio playback failed');
           setIsPlaying(false);
           setAudioLoading(false);
         }}
-        onLoadStart={() => {
-          setAudioLoading(true);
-          setAudioError(null);
-        }}
-        onCanPlay={() => setAudioLoading(false)}
-        onLoadedData={() => setAudioError(null)}
         preload="auto"
         crossOrigin="anonymous"
       />
       <audio 
         ref={nextAudioRef}
+        onEnded={handleAudioEnd}
+        onError={() => {
+          setAudioError('Audio playback failed');
+          setIsPlaying(false);
+          setAudioLoading(false);
+        }}
         preload="auto"
         crossOrigin="anonymous"
         style={{ display: 'none' }}
@@ -646,7 +639,7 @@ const ModernQuranReader: React.FC = () => {
               >
                 {surahs.map(surah => (
                   <option key={surah.number} value={surah.number}>
-                    {surah.number}. {surah.englishName}
+                    {toArabicNumerals(surah.number)}. {surah.englishName}
                   </option>
                 ))}
               </select>
@@ -929,7 +922,7 @@ const ModernQuranReader: React.FC = () => {
                       flexShrink: 0,
                       marginTop: '0.25rem'
                     }}>
-                      {currentSurah.number === 1 ? index + 1 : ayah.numberInSurah}
+                      {toArabicNumerals(currentSurah.number === 1 ? index + 1 : ayah.numberInSurah)}
                     </span>
                     <div style={{ flex: 1 }}>
                       <div 
@@ -1008,7 +1001,7 @@ const ModernQuranReader: React.FC = () => {
                     margin: '0 0.25rem',
                     verticalAlign: 'middle'
                   }}>
-                    {displayNumber}
+                    {toArabicNumerals(displayNumber)}
                   </span>
                   {index < currentSurah.ayahs.length - 2 ? ' ' : ''}
                 </span>
