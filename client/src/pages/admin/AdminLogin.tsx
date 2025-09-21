@@ -16,15 +16,25 @@ const AdminLogin: React.FC = () => {
     setLoading(true);
     setError('');
 
-    const adminEmail = process.env.REACT_APP_ADMIN_EMAIL || 'admin@islamicprayertools.com';
-    const adminPassword = process.env.REACT_APP_ADMIN_PASSWORD || 'Admin123!';
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials)
+      });
 
-    if (credentials.email === adminEmail && credentials.password === adminPassword) {
-      localStorage.setItem('userRole', 'admin');
-      localStorage.setItem('token', 'admin-token-secure');
-      navigate('/admin/dashboard');
-    } else {
-      setError('Invalid credentials');
+      const data = await response.json();
+
+      if (response.ok && data.user.role === 'admin') {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userRole', data.user.role);
+        localStorage.setItem('userName', data.user.name);
+        navigate('/admin/dashboard');
+      } else {
+        setError(data.error || 'Invalid admin credentials');
+      }
+    } catch (error) {
+      setError('Login failed. Please try again.');
     }
     setLoading(false);
   };

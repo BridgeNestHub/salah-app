@@ -1,71 +1,146 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 interface ContactSubmission {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   subject: string;
   message: string;
-  date: string;
-  status: 'new' | 'in-progress' | 'resolved' | 'closed';
+  createdAt: string;
+  status: 'pending' | 'in-progress' | 'resolved' | 'closed';
   assignedTo?: string;
   response?: string;
-  attachments?: string[];
 }
 
 const AdminContactManagement: React.FC = () => {
-  const [submissions, setSubmissions] = useState<ContactSubmission[]>([
-    {
-      id: '1',
-      name: 'Ahmed Hassan',
-      email: 'ahmed@example.com',
-      subject: 'Prayer Time Issue',
-      message: 'The prayer times shown for my location seem incorrect. Can you please check?',
-      date: '2024-01-18',
-      status: 'new',
-      attachments: ['screenshot.png']
-    },
-    {
-      id: '2',
-      name: 'Fatima Ali',
-      email: 'fatima@example.com',
-      subject: 'Event Registration',
-      message: 'I am having trouble registering for the upcoming Quran study circle.',
-      date: '2024-01-17',
-      status: 'in-progress',
-      assignedTo: 'Staff User',
-      response: 'We are looking into this issue and will get back to you soon.'
-    }
-  ]);
+  const [submissions, setSubmissions] = useState<ContactSubmission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [selectedSubmission, setSelectedSubmission] = useState<ContactSubmission | null>(null);
   const [responseText, setResponseText] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  const handleStatusChange = (id: string, status: ContactSubmission['status']) => {
-    setSubmissions(submissions.map(sub => 
-      sub.id === id ? { ...sub, status } : sub
-    ));
+  useEffect(() => {
+    fetchSubmissions();
+  }, []);
+
+  const fetchSubmissions = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/contact/submissions', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch submissions');
+      }
+      
+      const data = await response.json();
+      setSubmissions(data.data.submissions || []);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load contact submissions');
+      console.error('Error fetching submissions:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAssign = (id: string, assignedTo: string) => {
-    setSubmissions(submissions.map(sub => 
-      sub.id === id ? { ...sub, assignedTo, status: 'in-progress' } : sub
-    ));
+  const handleStatusChange = async (id: string, status: ContactSubmission['status']) => {
+    try {
+      const response = await fetch(`/api/admin/contact/submissions/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({ status })
+      });
+      
+      if (response.ok) {
+        setSubmissions(submissions.map(sub => 
+          sub._id === id ? { ...sub, status } : sub
+        ));
+      }
+    } catch (err) {
+      console.error('Error updating status:', err);
+    }
   };
 
-  const handleResponse = (id: string) => {
-    setSubmissions(submissions.map(sub => 
-      sub.id === id ? { ...sub, response: responseText, status: 'resolved' } : sub
-    ));
-    setResponseText('');
-    setSelectedSubmission(null);
+  const handleAssign = async (id: string, assignedTo: string) => {
+    try {
+      const response = await fetch(`/api/admin/contact/submissions/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({ status: 'in-progress' })
+      });
+      
+      if (response.ok) {
+        setSubmissions(submissions.map(sub => 
+          sub._id === id ? { ...sub, assignedTo, status: 'in-progress' } : sub
+        ));
+      }
+    } catch (err) {
+      console.error('Error assigning submission:', err);
+    }
+  };
+
+  const handleResponse = async (id: string) => {
+    try {
+      const response = await fetch(`/api/admin/contact/submissions/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({ status: 'resolved' })
+      });
+      
+      if (response.ok) {
+        setSubmissions(submissions.map(sub => 
+          sub._id === id ? { ...sub, response: responseText, status: 'resolved' } : sub
+        ));
+        setResponseText('');
+        setSelectedSubmission(null);
+      }
+    } catch (err) {
+      console.error('Error sending response:', err);
+    }
   };
 
   const filteredSubmissions = filterStatus === 'all' 
     ? submissions 
     : submissions.filter(sub => sub.status === filterStatus);
+
+  if (loading) {
+    return (
+      <div className="admin-layout-with-nav">
+        <div className="admin-content">
+          <div className="loading-spinner">Loading contact submissions...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="admin-layout-with-nav">
+        <div className="admin-content">
+          <div className="error-message">{error}</div>
+          <button onClick={fetchSubmissions} className="btn-modern btn-primary-modern">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-layout-with-nav">
@@ -100,7 +175,7 @@ const AdminContactManagement: React.FC = () => {
             className="modern-select"
           >
             <option value="all">All Status</option>
-            <option value="new">New</option>
+            <option value="pending">Pending</option>
             <option value="in-progress">In Progress</option>
             <option value="resolved">Resolved</option>
             <option value="closed">Closed</option>
@@ -108,8 +183,13 @@ const AdminContactManagement: React.FC = () => {
         </div>
 
         <div className="contact-grid">
-          {filteredSubmissions.map(submission => (
-            <div key={submission.id} className="contact-card">
+          {filteredSubmissions.length === 0 ? (
+            <div className="no-submissions">
+              <p>No contact submissions found.</p>
+            </div>
+          ) : (
+            filteredSubmissions.map(submission => (
+            <div key={submission._id} className="contact-card">
               <div className="contact-header">
                 <div className="contact-info">
                   <h3>{submission.name}</h3>
@@ -118,10 +198,10 @@ const AdminContactManagement: React.FC = () => {
                 <div className="contact-actions">
                   <select 
                     value={submission.status}
-                    onChange={(e) => handleStatusChange(submission.id, e.target.value as any)}
+                    onChange={(e) => handleStatusChange(submission._id, e.target.value as any)}
                     className="status-select"
                   >
-                    <option value="new">New</option>
+                    <option value="pending">Pending</option>
                     <option value="in-progress">In Progress</option>
                     <option value="resolved">Resolved</option>
                     <option value="closed">Closed</option>
@@ -143,7 +223,7 @@ const AdminContactManagement: React.FC = () => {
                 )}
                 
                 <div className="contact-meta">
-                  <span>📅 {submission.date}</span>
+                  <span>📅 {new Date(submission.createdAt).toLocaleDateString()}</span>
                   <span className={`status-badge ${submission.status}`}>{submission.status}</span>
                   {submission.assignedTo && <span>👤 Assigned to: {submission.assignedTo}</span>}
                 </div>
@@ -157,7 +237,7 @@ const AdminContactManagement: React.FC = () => {
 
                 <div className="contact-actions-bottom">
                   <select 
-                    onChange={(e) => handleAssign(submission.id, e.target.value)}
+                    onChange={(e) => handleAssign(submission._id, e.target.value)}
                     className="assign-select"
                   >
                     <option value="">Assign to...</option>
@@ -175,7 +255,8 @@ const AdminContactManagement: React.FC = () => {
                 </div>
               </div>
             </div>
-          ))}
+          ))
+          )}
         </div>
       </main>
       </div>
@@ -196,7 +277,7 @@ const AdminContactManagement: React.FC = () => {
             />
             <div className="modal-buttons">
               <button 
-                onClick={() => handleResponse(selectedSubmission.id)}
+                onClick={() => handleResponse(selectedSubmission._id)}
                 className="btn-modern btn-primary-modern"
               >
                 Send Response

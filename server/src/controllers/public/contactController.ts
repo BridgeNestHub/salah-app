@@ -35,12 +35,16 @@ export const submitContact = async (req: Request, res: Response) => {
     console.log(`✅ Contact submission saved: ${name} - ${subject}`);
 
     // Send emails asynchronously (don't wait for them)
-    Promise.all([
-      sendThankYouEmail(email, name),
-      sendContactNotification(name, email, subject, message)
-    ]).catch(emailError => {
-      console.error('❌ Email sending failed:', emailError);
-    });
+    if (process.env.ENABLE_EMAILS === 'true') {
+      Promise.all([
+        sendThankYouEmail(email, name),
+        sendContactNotification(name, email, subject, message)
+      ]).catch(emailError => {
+        console.error('❌ Email sending failed:', emailError);
+      });
+    } else {
+      console.log('📧 Email sending disabled');
+    }
 
     // Return response immediately
     return res.status(201).json({

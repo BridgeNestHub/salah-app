@@ -7,11 +7,13 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 
 // Import routes
+import authRoutes from '../routes/auth';
 import publicEventsRoutes from '../routes/public/events';
 import adminEventsRoutes from '../routes/admin/events';
 import staffEventsRoutes from '../routes/staff/events';
 import publicContactRoutes from '../routes/public/contact';
 import staffContactRoutes from '../routes/staff/contact';
+import adminContactRoutes from '../routes/admin/contact';
 import publicMapsRoutes from '../routes/public/maps';
 import publicPrayerRoutes from '../routes/public/prayer';
 import publicLocationRoutes from '../routes/public/location';
@@ -71,11 +73,13 @@ export const configureExpress = (app: express.Application) => {
   console.log('🗺️  Maps routes type:', typeof publicMapsRoutes);
 
   // API Routes
+  app.use('/api/auth', authRoutes);
   app.use('/api/public/events', publicEventsRoutes);
   app.use('/api/admin/events', adminEventsRoutes);
   app.use('/api/staff/events', staffEventsRoutes);
   app.use('/api/public/contact', publicContactRoutes);
   app.use('/api/staff/contact', staffContactRoutes);
+  app.use('/api/admin/contact', adminContactRoutes);
   
   // Maps routes with extra logging
   console.log('🗺️  Registering /api/maps routes...');

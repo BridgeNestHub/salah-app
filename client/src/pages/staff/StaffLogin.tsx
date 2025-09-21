@@ -16,15 +16,25 @@ const StaffLogin: React.FC = () => {
     setLoading(true);
     setError('');
 
-    const staffEmail = process.env.REACT_APP_STAFF_EMAIL || 'staff@islamicprayertools.com';
-    const staffPassword = process.env.REACT_APP_STAFF_PASSWORD || 'Staff123!';
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials)
+      });
 
-    if (credentials.email === staffEmail && credentials.password === staffPassword) {
-      localStorage.setItem('userRole', 'staff');
-      localStorage.setItem('token', 'staff-token-secure');
-      navigate('/staff/dashboard');
-    } else {
-      setError('Invalid credentials');
+      const data = await response.json();
+
+      if (response.ok && data.user.role === 'staff') {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userRole', data.user.role);
+        localStorage.setItem('userName', data.user.name);
+        navigate('/staff/dashboard');
+      } else {
+        setError(data.error || 'Invalid staff credentials');
+      }
+    } catch (error) {
+      setError('Login failed. Please try again.');
     }
     setLoading(false);
   };
