@@ -213,15 +213,6 @@ const AdminContactManagement: React.FC = () => {
                 <h4>{submission.subject}</h4>
                 <p className="contact-message">{submission.message}</p>
                 
-                {submission.attachments && (
-                  <div className="attachments">
-                    <strong>Attachments:</strong>
-                    {submission.attachments.map((file, index) => (
-                      <span key={index} className="attachment">📎 {file}</span>
-                    ))}
-                  </div>
-                )}
-                
                 <div className="contact-meta">
                   <span>📅 {new Date(submission.createdAt).toLocaleDateString()}</span>
                   <span className={`status-badge ${submission.status}`}>{submission.status}</span>
