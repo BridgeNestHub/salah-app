@@ -34,17 +34,15 @@ export const submitContact = async (req: Request, res: Response) => {
     await submission.save();
     console.log(`✅ Contact submission saved: ${name} - ${subject}`);
 
-    // Send emails (don't fail the request if emails fail)
-    try {
-      await Promise.all([
-        sendThankYouEmail(email, name),
-        sendContactNotification(name, email, subject, message)
-      ]);
-    } catch (emailError) {
+    // Send emails asynchronously (don't wait for them)
+    Promise.all([
+      sendThankYouEmail(email, name),
+      sendContactNotification(name, email, subject, message)
+    ]).catch(emailError => {
       console.error('❌ Email sending failed:', emailError);
-      // Continue - don't fail the request
-    }
+    });
 
+    // Return response immediately
     return res.status(201).json({
       success: true,
       message: 'Thank you for your message! We will get back to you soon, In Sha Allah.'
