@@ -2,9 +2,8 @@ import express from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
-import { configureExpress } from './config/express';
 
-// Load environment variables
+// Load environment variables first
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env' : '../.env' });
 
 const app = express();
@@ -13,32 +12,16 @@ const PORT = parseInt(process.env.PORT || '8000', 10);
 console.log('🔧 Environment:', process.env.NODE_ENV);
 console.log('🔧 Using PORT:', PORT);
 
-// Configure Express middleware and routes
-configureExpress(app);
+// Basic middleware first
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Database connection
-let dbConnected = false;
-const connectDB = async () => {
-  try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/islamic-prayer-tools';
-    console.log('🔄 Attempting MongoDB connection...');
-    
-    await mongoose.connect(mongoUri);
-    console.log('✅ MongoDB connected successfully');
-    dbConnected = true;
-  } catch (error) {
-    console.error('❌ MongoDB connection failed:', error);
-    dbConnected = false;
-  }
-};
-
-// Health check routes (MUST BE FIRST)
+// Health check MUST be first
 app.get('/api/health', (req, res) => {
   console.log('📍 Health check requested');
   res.status(200).json({ 
     status: 'OK', 
     message: 'Islamic Prayer Tools API is running',
-    database: dbConnected ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
     port: PORT
   });
@@ -51,6 +34,35 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Try to configure express routes (but don't fail if it errors)
+try {
+  const { configureExpress } = require('./config/express');
+  configureExpress(app);
+  console.log('✅ Express configuration loaded successfully');
+} catch (error) {
+  console.warn('⚠️ Express configuration failed, continuing with basic setup:', error.message);
+}
+
+// Database connection (optional)
+let dbConnected = false;
+const connectDB = async () => {
+  try {
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      console.log('⚠️ No MongoDB URI provided, skipping database connection');
+      return;
+    }
+    
+    console.log('🔄 Attempting MongoDB connection...');
+    await mongoose.connect(mongoUri);
+    console.log('✅ MongoDB connected successfully');
+    dbConnected = true;
+  } catch (error) {
+    console.error('❌ MongoDB connection failed:', error.message);
+    dbConnected = false;
+  }
+};
 
 // Serve static files from React build
 const buildPath = path.join(__dirname, '../../client/build');
@@ -88,11 +100,15 @@ app.use((err: any, req: any, res: any, next: any) => {
 const startServer = async () => {
   try {
     // Try connecting to database (don't fail if it doesn't work)
-    await connectDB();
+    try {
+      await connectDB();
+    } catch (dbError) {
+      console.warn('⚠️ Database connection failed, continuing without DB:', dbError.message);
+    }
     
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server successfully started on port ${PORT}`);
-      console.log(`🔧 Health endpoint: http://localhost:${PORT}/api/health`);
+      console.log(`🔧 Health endpoint: http://0.0.0.0:${PORT}/api/health`);
       console.log(`📊 Database status: ${dbConnected ? '✅ Connected' : '❌ Disconnected'}`);
     });
 
