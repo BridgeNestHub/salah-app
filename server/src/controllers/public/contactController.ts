@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import ContactSubmission from '../../models/ContactSubmission';
-import { sendThankYouEmail } from '../../services/emailService';
+import { sendThankYouEmail, sendContactNotification } from '../../services/emailService';
 
 export const submitContact = async (req: Request, res: Response) => {
   try {
@@ -14,6 +14,15 @@ export const submitContact = async (req: Request, res: Response) => {
       });
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a valid email address'
+      });
+    }
+
     const submission = new ContactSubmission({
       name: name.trim(),
       email: email.trim().toLowerCase(),
@@ -23,12 +32,17 @@ export const submitContact = async (req: Request, res: Response) => {
     });
 
     await submission.save();
+    console.log(`✅ Contact submission saved: ${name} - ${subject}`);
 
-    // Send thank you email to user
+    // Send emails (don't fail the request if emails fail)
     try {
-      await sendThankYouEmail(email, name);
+      await Promise.all([
+        sendThankYouEmail(email, name),
+        sendContactNotification(name, email, subject, message)
+      ]);
     } catch (emailError) {
-      console.error('Failed to send thank you email:', emailError);
+      console.error('❌ Email sending failed:', emailError);
+      // Continue - don't fail the request
     }
 
     return res.status(201).json({
@@ -36,6 +50,7 @@ export const submitContact = async (req: Request, res: Response) => {
       message: 'Thank you for your message! We will get back to you soon, In Sha Allah.'
     });
   } catch (error) {
+    console.error('❌ Contact submission error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to submit contact form'
