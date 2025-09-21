@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import ContactSubmission from '../../models/ContactSubmission';
-import { sendThankYouEmail, sendContactNotification } from '../../services/emailService';
+import { sendThankYouEmail } from '../../services/emailService';
 
 export const submitContact = async (req: Request, res: Response) => {
   try {
@@ -24,27 +24,11 @@ export const submitContact = async (req: Request, res: Response) => {
 
     await submission.save();
 
-    // Send thank you email to user (DISABLED)
-    // try {
-    //   await sendThankYouEmail(email, name);
-    // } catch (emailError) {
-    //   console.error('Failed to send thank you email:', emailError);
-    // }
-
-    // Log received data for debugging
-    console.log('Contact form submission:', {
-      name: name?.trim(),
-      email: email?.trim(),
-      subject: subject?.trim(),
-      messageLength: message?.trim()?.length
-    });
-
-    // Send notification email to admin
+    // Send thank you email to user
     try {
-      await sendContactNotification(name, email, subject, message);
-      console.log('Admin notification email sent successfully');
+      await sendThankYouEmail(email, name);
     } catch (emailError) {
-      console.error('Failed to send admin notification:', emailError);
+      console.error('Failed to send thank you email:', emailError);
     }
 
     return res.status(201).json({

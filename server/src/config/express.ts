@@ -74,7 +74,7 @@ export const configureExpress = (app: express.Application) => {
   app.use('/api/public/events', publicEventsRoutes);
   app.use('/api/admin/events', adminEventsRoutes);
   app.use('/api/staff/events', staffEventsRoutes);
-  app.use('/api/public/contact', publicContactRoutes);
+  app.use('/api/contact', publicContactRoutes);
   app.use('/api/staff/contact', staffContactRoutes);
   
   // Maps routes with extra logging

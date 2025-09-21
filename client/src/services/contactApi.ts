@@ -29,7 +29,7 @@ class ContactAPI {
   }
 
   async submitContact(formData: ContactFormData): Promise<ApiResponse<void>> {
-    return this.request('/public/contact', {
+    return this.request('/contact', {
       method: 'POST',
       body: JSON.stringify(formData),
     });
